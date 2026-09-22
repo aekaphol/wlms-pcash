@@ -45,30 +45,30 @@
   header.top{
     position:sticky; top:0; z-index:20;
     background:linear-gradient(135deg,var(--orange),var(--orange-dark));
-    color:#fff; padding:16px 16px calc(14px + env(safe-area-inset-top,0px));
-    padding-top:calc(16px + env(safe-area-inset-top,0px));
-    border-radius:0 0 20px 20px; box-shadow:0 6px 20px rgba(234,88,12,0.25);
-    margin:0 -14px 16px;
+    color:#fff; padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px));
+    padding-top:calc(6px + env(safe-area-inset-top,0px));
+    border-radius:0 0 14px 14px; box-shadow:0 4px 14px rgba(234,88,12,0.25);
+    margin:0 -14px 10px;
   }
   header.top .brandrow{display:flex; align-items:center; justify-content:space-between; gap:10px;}
-  header.top .brand{display:flex; align-items:center; gap:10px;}
+  header.top .brand{display:flex; align-items:center; gap:8px;}
   header.top .logo{
-    width:40px;height:40px;border-radius:11px;background:#fff;color:var(--orange-dark);
-    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;
+    width:28px;height:28px;border-radius:8px;background:#fff;color:var(--orange-dark);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;
     font-family:'Kanit',sans-serif; flex:none;
   }
-  header.top h1{font-size:18px; font-weight:600; line-height:1.2;}
-  header.top .sub{font-size:12px; opacity:.9; margin-top:2px;}
+  header.top h1{font-size:15px; font-weight:600; line-height:1.2;}
   .date-pill{
     background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35);
-    border-radius:12px; padding:6px 10px; display:flex; align-items:center; gap:6px;
+    border-radius:11px; padding:4px 8px; display:flex; align-items:center; gap:5px;
   }
   .date-pill input[type=date]{
     background:transparent;border:none;color:#fff;font-family:'Sarabun',sans-serif;
-    font-size:14px; font-weight:600; outline:none; color-scheme: dark;
+    font-size:12.5px; font-weight:600; outline:none; color-scheme: dark;
   }
-  .status-chip{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
-    padding:4px 10px; border-radius:99px; margin-top:8px; width:fit-content;}
+  .chip-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  .status-chip{display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600;
+    padding:2px 8px; border-radius:99px; width:fit-content; white-space:nowrap; line-height:1.6;}
   .status-draft{background:rgba(255,255,255,0.2); color:#fff;}
   .status-confirmed{background:#fff; color:var(--green);}
 
@@ -240,19 +240,16 @@
     <div class="brandrow">
       <div class="brand">
         <div class="logo">WL</div>
-        <div>
-          <h1>WL-Cash</h1>
-          <div class="sub">ใบเบิกเงินสดย่อย · เวียงหลวง สาขาแม่สาย</div>
-        </div>
+        <h1>WL-Cash</h1>
       </div>
       <div class="date-pill">
-        <span style="font-size:13px;">📅</span>
+        <span style="font-size:12px;">📅</span>
         <input type="date" id="entryDate">
       </div>
     </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <div class="chip-row">
       <div id="statusChip" class="status-chip status-draft">🖊️ ฉบับร่าง</div>
-      <div id="cloudChip" class="status-chip status-draft">📴 เครื่องเดียว (ยังไม่ตั้งค่าคลาวด์)</div>
+      <div id="cloudChip" class="status-chip status-draft">📴 เครื่องเดียว</div>
     </div>
   </header>
 
@@ -465,13 +462,13 @@ function setCloudChip(state){
   const chip = document.getElementById('cloudChip');
   if(!chip) return;
   if(state === 'on'){
-    chip.textContent = '☁️ ซิงก์หลายเครื่อง';
+    chip.textContent = '☁️ ซิงก์แล้ว';
     chip.style.background = 'rgba(255,255,255,0.22)';
   } else if(state === 'syncing'){
     chip.textContent = '🔄 กำลังซิงก์...';
     chip.style.background = 'rgba(255,255,255,0.22)';
   } else {
-    chip.textContent = '📴 เครื่องเดียว (ยังไม่ตั้งค่าคลาวด์)';
+    chip.textContent = '📴 เครื่องเดียว';
     chip.style.background = 'rgba(255,255,255,0.14)';
   }
 }
