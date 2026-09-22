@@ -17,10 +17,11 @@
   ในเครื่องเดียวตามปกติ (localStorage) โดยไม่มีการซิงก์ข้ามเครื่อง
 */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBGg8jeB9_7U8AT0-XwZt4PveNFN0zuOgA",
+  authDomain: "wlms-pcash.firebaseapp.com",
+  projectId: "wlms-pcash",
+  storageBucket: "wlms-pcash.firebasestorage.app",
+  messagingSenderId: "944385840597",
+  appId: "1:944385840597:web:f6218d707d5c3557ce595c",
+  measurementId: "G-H6VS7VY8ZM"
 };
