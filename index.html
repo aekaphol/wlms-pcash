@@ -479,9 +479,15 @@ let currentItems = []; // {name, hasReceipt:'yes'/'no', amount, pay:'cash'/'cred
 let idCounter = 1;
 
 function todayStr(){
-  const d = new Date();
-  const tz = d.getTimezoneOffset()*60000;
-  return new Date(d - tz).toISOString().slice(0,10);
+  return toDateStr(new Date());
+}
+function toDateStr(d){
+  // แปลง Date เป็น "YYYY-MM-DD" ตามเวลาท้องถิ่นของเครื่อง (ไม่ใช้ toISOString ตรงๆ
+  // เพราะ toISOString แปลงเป็น UTC ก่อน ทำให้วันที่เพี้ยนไป 1 วันในโซนเวลาอย่างไทย (+7))
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 function fmtBaht(n){
   n = Number(n)||0;
@@ -568,7 +574,7 @@ async function initCloudSync(){
 /* ============ LOAD / SAVE DATE DATA ============ */
 function getYesterdayRemain(dateStr){
   const prevDate = new Date(dateStr+'T00:00:00'); prevDate.setDate(prevDate.getDate()-1);
-  const prevKey = prevDate.toISOString().slice(0,10);
+  const prevKey = toDateStr(prevDate);
   if(records[prevKey] && records[prevKey].confirmed){
     return computeTotals(records[prevKey]).remaining;
   }
