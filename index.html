@@ -66,6 +66,14 @@
     background:transparent;border:none;color:#fff;font-family:'Sarabun',sans-serif;
     font-size:12.5px; font-weight:600; outline:none; color-scheme: dark;
   }
+  .cat-switch{display:flex; gap:4px; margin-top:6px; background:rgba(255,255,255,0.18); padding:3px; border-radius:11px;}
+  .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:'Kanit','Sarabun',sans-serif;
+    font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer; transition:.15s;}
+  .cat-switch button.on{background:#fff; color:var(--orange-dark); box-shadow:0 2px 6px rgba(0,0,0,0.12);}
+  body.simple .only-petty{display:none !important;}
+  .only-simple{display:none;}
+  body.simple .only-simple{display:block;}
+  body.simple .money-box.only-simple{display:flex;}
   .chip-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
   .status-chip{display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600;
     padding:2px 8px; border-radius:99px; width:fit-content; white-space:nowrap; line-height:1.6;}
@@ -254,6 +262,10 @@
         <input type="date" id="entryDate">
       </div>
     </div>
+    <div class="cat-switch">
+      <button type="button" id="catBtn-petty" onclick="switchCategory('petty')">💵 เงินสดย่อย</button>
+      <button type="button" id="catBtn-main" onclick="switchCategory('main')">🥩 วัตถุดิบหลัก</button>
+    </div>
     <div class="chip-row">
       <div id="statusChip" class="status-chip status-draft">🖊️ ฉบับร่าง</div>
       <div id="cloudChip" class="status-chip status-draft">📴 เครื่องเดียว</div>
@@ -269,7 +281,7 @@
   <!-- ================= ENTRY VIEW ================= -->
   <section id="view-entry" class="active">
 
-    <div class="card">
+    <div class="card only-petty">
       <h2><span class="num">1</span> ยอดเงินตั้งต้น</h2>
       <div class="money-box" id="yesterdayBox" style="background:#f3f0ec;">
         <span class="lbl">คงเหลือเงินสดเมื่อวาน</span>
@@ -286,7 +298,7 @@
     </div>
 
     <div class="card">
-      <h2><span class="num">2</span> รายการเบิกจ่าย / วัตถุดิบ</h2>
+      <h2><span class="num" id="stepNum2">2</span> รายการเบิกจ่าย / วัตถุดิบ</h2>
       <div class="small-note" style="margin-bottom:8px;">แตะวัตถุดิบเพื่อเพิ่มรายการอย่างรวดเร็ว</div>
       <div id="quickPicks" class="quick-picks"></div>
       <div id="itemsWrap"></div>
@@ -295,14 +307,18 @@
     </div>
 
     <div class="card">
-      <h2><span class="num">3</span> สรุปยอดปัจจุบัน</h2>
-      <div class="totals-grid" style="grid-template-columns:1fr 1fr;">
+      <h2><span class="num" id="stepNum3">3</span> สรุปยอดปัจจุบัน</h2>
+      <div class="totals-grid only-petty" style="grid-template-columns:1fr 1fr;">
         <div class="box"><div class="l">เงินสด</div><div class="v" id="sumCash">฿0</div></div>
         <div class="box"><div class="l">บัตร</div><div class="v" id="sumCredit">฿0</div></div>
       </div>
-      <div class="money-box" style="background:#fff4ea; margin-top:10px;">
+      <div class="money-box only-petty" style="background:#fff4ea; margin-top:10px;">
         <span class="lbl">คงเหลือเงินสด</span>
         <span class="val" id="sumRemain">฿0</span>
+      </div>
+      <div class="money-box only-simple" style="background:#fff4ea;">
+        <span class="lbl">รวมทั้งหมด</span>
+        <span class="val" id="sumTotal">฿0</span>
       </div>
     </div>
 
@@ -311,9 +327,9 @@
   <!-- ================= SUMMARY VIEW ================= -->
   <section id="view-summary">
     <div class="card">
-      <h2>📊 สรุปใบเบิกเงินสดย่อย</h2>
+      <h2 id="summaryTitle">📊 สรุปใบเบิกเงินสดย่อย</h2>
       <div id="summaryDateLabel" class="small-note" style="font-size:14px; font-weight:600; color:var(--ink);"></div>
-      <div class="grid2" style="margin-top:12px;">
+      <div class="grid2 only-petty" style="margin-top:12px;">
         <div class="box" style="background:var(--orange-light); border-radius:10px; padding:10px;">
           <div class="l" style="font-size:11px;color:var(--ink-soft);font-weight:600;">ยอดยกมา</div>
           <div class="v" id="sumCarry" style="font-family:'Kanit'; font-weight:700; color:var(--orange-dark);">฿0</div>
@@ -330,7 +346,7 @@
       <div style="overflow-x:auto;">
         <table class="summary-table" id="summaryTable">
           <thead>
-            <tr><th>No</th><th>รายการ</th><th>บิล</th><th style="text-align:right;">มูลค่า</th><th>ชำระ</th><th>หมายเหตุ</th></tr>
+            <tr><th>No</th><th>รายการ</th><th class="only-petty">บิล</th><th style="text-align:right;">มูลค่า</th><th class="only-petty">ชำระ</th><th>หมายเหตุ</th></tr>
           </thead>
           <tbody id="summaryTableBody"></tbody>
         </table>
@@ -339,13 +355,17 @@
 
     <div class="card">
       <h2>สรุปยอดรวม</h2>
-      <div class="totals-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="totals-grid only-petty" style="grid-template-columns:1fr 1fr;">
         <div class="box"><div class="l">เงินสด</div><div class="v" id="finalCash">฿0</div></div>
         <div class="box"><div class="l">บัตร</div><div class="v" id="finalCredit">฿0</div></div>
       </div>
-      <div class="money-box" style="background:#fff4ea; margin-top:10px;">
+      <div class="money-box only-petty" style="background:#fff4ea; margin-top:10px;">
         <span class="lbl">คงเหลือเงินสด</span>
         <span class="val" id="finalRemain">฿0</span>
+      </div>
+      <div class="money-box only-simple" style="background:#fff4ea;">
+        <span class="lbl">รวมทั้งหมด</span>
+        <span class="val" id="finalTotal">฿0</span>
       </div>
     </div>
 
@@ -375,7 +395,7 @@
     </div>
 
     <div class="card">
-      <h2>ใบเบิกที่บันทึกไว้</h2>
+      <h2 id="recordsTitle">ใบเบิกที่บันทึกไว้</h2>
       <div id="recordsList"></div>
     </div>
   </section>
@@ -398,14 +418,36 @@
 
 <script>
 /* ============ STORAGE KEYS ============ */
-const K_MATERIALS = 'wlcash_materials_v1';
-const K_RECORDS   = 'wlcash_records_v1';   // { 'YYYY-MM-DD': {carryForward, additionalCash, items:[...], confirmed, confirmedAt} }
-const K_DRAFTS    = 'wlcash_drafts_v1';    // same shape, unconfirmed working copies
+/* ===== หมวดหลัก: petty = เงินสดย่อย (ข้อมูลเดิม), main = วัตถุดิบหลัก ===== */
+const CATS = {
+  petty: { label:'เงินสดย่อย',  suffix:'' },
+  main:  { label:'วัตถุดิบหลัก', suffix:'_main' }
+};
+const K_CAT = 'wlcash_category_v1';
+let CAT = 'petty';
+try{ const c = localStorage.getItem(K_CAT); if(c && CATS[c]) CAT = c; }catch(e){}
+const CAT_LABEL = CATS[CAT].label;
+const SIMPLE = (CAT === 'main');   // วัตถุดิบหลัก: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
+if(SIMPLE) document.body.classList.add('simple');
+const CAT_SUFFIX = CATS[CAT].suffix;
+const COL_ENTRIES = 'wlcash_entries' + CAT_SUFFIX;   // คอลเลกชันบน Firestore
+const DOC_MATERIALS = 'materials' + CAT_SUFFIX;
+
+const K_MATERIALS = 'wlcash_materials_v1' + CAT_SUFFIX;
+const K_RECORDS   = 'wlcash_records_v1' + CAT_SUFFIX;   // { 'YYYY-MM-DD': {carryForward, additionalCash, items:[...], confirmed, confirmedAt} }
+const K_DRAFTS    = 'wlcash_drafts_v1' + CAT_SUFFIX;    // same shape, unconfirmed working copies
 
 const DEFAULT_MATERIALS = [
   'ธนพิริยะ','แมคโคร','พริกขี้หนู','พริกแดง','พริกเขียว','กระเทียมเล็ก','กระเทียมใหญ่','ผัก',
   'ขนส่ง','ขนส่งตุ้ย','ขนมถ้วย','ขนมไทย','บราวนี่','ขนมหวาน','ผลไม้','แตงโม','ไข่ไก่',
   'สะโพกหมู','ซี่โครงหมู','ฟักทอง','แตงไทย','กล้วย','มะละกอ','ข้าวโพด','โคนไอติม','ถั่วคั่ว'
+];
+
+const DEFAULT_MATERIALS_MAIN = [
+  'CAT Advance','แกะกุ้งซิ่ง','BJC','ปุ้ย แม่กลอง','ลัคกี้เลย์','แพประกายโรจน์','ห้องเย็นแม่สาย','JP เจ๊ปู',
+  'ทะเลป่ายาง','ห้องเย็นมหาชัย','แพกฤษฎา (เจ๊ป้อม)','กุ้งแม่น้ำ','กุ้งขาว','ปูดำ','ปูม้า','ปูดาว',
+  'หอยนางรม/แมงดาทะเล','หอยแครง','แมงกะพรุน','SK เนื้อ','สมพรฟู้ด','ผักพี่อ้อย','ลูกชิ้น','แก๊ส','ถ่าน',
+  'วอลล์','น้ำแข็ง','โค้ก','นามน','เสริมสุข'
 ];
 
 function loadJSON(key, fallback){
@@ -414,7 +456,8 @@ function loadJSON(key, fallback){
 function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
 let materials = loadJSON(K_MATERIALS, null);
-if(!materials){ materials = DEFAULT_MATERIALS.slice(); saveJSON(K_MATERIALS, materials); }
+if(SIMPLE && Array.isArray(materials) && materials.length === 0){ materials = null; } // เคยเปิดหมวดนี้ตอนยังว่าง -> ใส่ค่าเริ่มต้น
+if(!materials){ materials = (CAT === 'petty') ? DEFAULT_MATERIALS.slice() : DEFAULT_MATERIALS_MAIN.slice(); saveJSON(K_MATERIALS, materials); }
 let records = loadJSON(K_RECORDS, {});
 let drafts  = loadJSON(K_DRAFTS, {});
 
@@ -434,25 +477,25 @@ try{
 
 async function cloudSaveMaterials(){
   if(!cloudReady) return;
-  try{ await db.collection('wlcash').doc('materials').set({ list: materials, updatedAt: Date.now() }); }
+  try{ await db.collection('wlcash').doc(DOC_MATERIALS).set({ list: materials, updatedAt: Date.now() }); }
   catch(e){ console.warn('cloudSaveMaterials failed', e); }
 }
 async function cloudSaveEntry(dateStr, data){
   if(!cloudReady) return;
-  try{ await db.collection('wlcash_entries').doc(dateStr).set({ ...data, updatedAt: Date.now() }); }
+  try{ await db.collection(COL_ENTRIES).doc(dateStr).set({ ...data, updatedAt: Date.now() }); }
   catch(e){ console.warn('cloudSaveEntry failed', e); }
 }
 async function cloudLoadEntry(dateStr){
   if(!cloudReady) return null;
   try{
-    const snap = await db.collection('wlcash_entries').doc(dateStr).get();
+    const snap = await db.collection(COL_ENTRIES).doc(dateStr).get();
     return snap.exists ? snap.data() : null;
   }catch(e){ console.warn('cloudLoadEntry failed', e); return null; }
 }
 async function cloudLoadAllEntries(){
   if(!cloudReady) return null;
   try{
-    const snap = await db.collection('wlcash_entries').get();
+    const snap = await db.collection(COL_ENTRIES).get();
     const out = {};
     snap.forEach(doc => out[doc.id] = doc.data());
     return out;
@@ -461,7 +504,7 @@ async function cloudLoadAllEntries(){
 async function cloudLoadMaterials(){
   if(!cloudReady) return null;
   try{
-    const snap = await db.collection('wlcash').doc('materials').get();
+    const snap = await db.collection('wlcash').doc(DOC_MATERIALS).get();
     return snap.exists ? snap.data().list : null;
   }catch(e){ console.warn('cloudLoadMaterials failed', e); return null; }
 }
@@ -506,6 +549,26 @@ function fmtDateLabel(dateStr){
   const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+/* ============ CATEGORY (เงินสดย่อย / วัตถุดิบหลัก) ============ */
+document.getElementById('catBtn-' + CAT).classList.add('on');
+document.getElementById('summaryTitle').textContent = '📊 สรุป · ' + CAT_LABEL;
+document.getElementById('recordsTitle').textContent = 'ใบเบิกที่บันทึกไว้ · ' + CAT_LABEL;
+document.title = 'WL-Cash | ' + CAT_LABEL;
+if(SIMPLE){ document.getElementById('stepNum2').textContent = '1'; document.getElementById('stepNum3').textContent = '2'; }
+
+async function switchCategory(c){
+  if(c === CAT || !CATS[c]) return;
+  // ส่งฉบับร่างที่ค้างอยู่ขึ้นคลาวด์ก่อนสลับหมวด (รอไม่เกิน 1.5 วินาที)
+  if(saveDraftTimer){
+    clearTimeout(saveDraftTimer); saveDraftTimer = null;
+    if(cloudReady && drafts[currentDate]){
+      try{ await Promise.race([cloudSaveEntry(currentDate, drafts[currentDate]), new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+    }
+  }
+  try{ localStorage.setItem(K_CAT, c); }catch(e){}
+  location.reload();
 }
 
 /* ============ INIT ============ */
@@ -558,7 +621,7 @@ async function initCloudSync(){
   }
 
   // ฟังการเปลี่ยนแปลงแบบเรียลไทม์จากเครื่องอื่น (อัปเดตรายการในหน้ารายงานอัตโนมัติ)
-  db.collection('wlcash_entries').onSnapshot(snap=>{
+  db.collection(COL_ENTRIES).onSnapshot(snap=>{
     let changed = false;
     snap.docChanges().forEach(ch=>{
       const d = ch.doc.id;
@@ -581,6 +644,7 @@ async function initCloudSync(){
 
 /* ============ LOAD / SAVE DATE DATA ============ */
 function getYesterdayRemain(dateStr){
+  if(SIMPLE) return 0;
   const prevDate = new Date(dateStr+'T00:00:00'); prevDate.setDate(prevDate.getDate()-1);
   const prevKey = toDateStr(prevDate);
   if(records[prevKey] && records[prevKey].confirmed){
@@ -713,13 +777,13 @@ function renderItemRows(){
             placeholder="เช่น พริกขี้หนู, แมคโคร..."
             oninput="updateItem(${it._id},'name',this.value)">
         </div>
-        <div class="two">
+        <div class="${SIMPLE ? '' : 'two'}">
           <div class="field">
             <label>มูลค่า (บาท)</label>
             <input type="number" inputmode="decimal" min="0" value="${it.amount}"
               placeholder="0" oninput="updateItem(${it._id},'amount',this.value)">
           </div>
-          <div class="field">
+          <div class="field only-petty">
             <label>บิล</label>
             <div class="seg">
               <button type="button" class="${it.hasReceipt==='yes'?'on':''}" onclick="updateItem(${it._id},'hasReceipt','yes')">มี</button>
@@ -727,7 +791,7 @@ function renderItemRows(){
             </div>
           </div>
         </div>
-        <div class="field">
+        <div class="field only-petty">
           <label>ชำระเงิน</label>
           <div class="seg pay">
             <button type="button" class="cash ${it.pay==='cash'?'on':''}" onclick="updateItem(${it._id},'pay','cash')">เงินสด</button>
@@ -788,6 +852,10 @@ function renderQuickPicks(){
   const wrap = document.getElementById('quickPicks');
   if(!wrap) return;
   const usedNames = new Set(currentItems.map(it => (it.name||'').trim()).filter(Boolean));
+  if(materials.length === 0){
+    wrap.innerHTML = '<div class="small-note" style="margin:0 0 4px;">ยังไม่มีวัตถุดิบในหมวดนี้ — กด "+ เพิ่มรายการ" แล้วพิมพ์ชื่อ ระบบจะจำไว้ให้เลือกครั้งต่อไป</div>';
+    return;
+  }
   wrap.innerHTML = materials.map(m=>{
     const active = usedNames.has(m);
     return `<button type="button" class="chip ${active?'chip-on':''}" onclick="pickMaterial('${m.replace(/'/g,"\\'")}')">${escapeAttr(m)}</button>`;
@@ -837,6 +905,7 @@ function updateEntryTotals(){
   document.getElementById('sumCash').textContent = fmtBaht(t.cash);
   document.getElementById('sumCredit').textContent = fmtBaht(t.credit);
   document.getElementById('sumRemain').textContent = fmtBaht(t.remaining);
+  document.getElementById('sumTotal').textContent = fmtBaht(t.totalSpend);
 }
 
 /* ============ VIEWS ============ */
@@ -888,9 +957,9 @@ function buildSummaryView(){
       return `<tr>
         <td>${idx+1}</td>
         <td>${escapeAttr(it.name)}</td>
-        <td><span class="badge ${it.hasReceipt==='yes'?'yes':'no'}">${it.hasReceipt==='yes'?'มี':'ไม่มี'}</span></td>
+        <td class="only-petty"><span class="badge ${it.hasReceipt==='yes'?'yes':'no'}">${it.hasReceipt==='yes'?'มี':'ไม่มี'}</span></td>
         <td class="amt">${fmtBaht(it.amount)}</td>
-        <td><span class="badge ${payClass}">${payLabel}</span></td>
+        <td class="only-petty"><span class="badge ${payClass}">${payLabel}</span></td>
         <td>${escapeAttr(it.note||'-')}</td>
       </tr>`;
     }).join('');
@@ -899,6 +968,7 @@ function buildSummaryView(){
   document.getElementById('finalCash').textContent = fmtBaht(t.cash);
   document.getElementById('finalCredit').textContent = fmtBaht(t.credit);
   document.getElementById('finalRemain').textContent = fmtBaht(t.remaining);
+  document.getElementById('finalTotal').textContent = fmtBaht(t.totalSpend);
 
   const confirmBtn = document.getElementById('confirmBtn');
   if(confirmedRec){
@@ -963,12 +1033,14 @@ function renderRecordsList(){
         <div class="d">${fmtDateLabel(d)}</div>
         <div class="m">${count} รายการ</div>
       </div>
-      <div class="rr-stats">
+      ${SIMPLE ? `<div class="rr-stats" style="grid-template-columns:1fr;">
+        <div class="rr-stat rr-highlight"><span class="rr-l">รวมทั้งหมด</span><span class="rr-v">${fmtBaht(t.totalSpend)}</span></div>
+      </div>` : `<div class="rr-stats">
         <div class="rr-stat"><span class="rr-l">เงินสด</span><span class="rr-v">${fmtBaht(t.cash)}</span></div>
         <div class="rr-stat"><span class="rr-l">บัตร</span><span class="rr-v">${fmtBaht(t.credit)}</span></div>
         <div class="rr-stat"><span class="rr-l">เบิกเพิ่ม</span><span class="rr-v">${fmtBaht(t.add)}</span></div>
         <div class="rr-stat rr-highlight"><span class="rr-l">คงเหลือเงินสด</span><span class="rr-v">${fmtBaht(t.remaining)}</span></div>
-      </div>
+      </div>`}
     </div>`;
   }).join('');
 }
@@ -989,37 +1061,53 @@ function generateCSV(){
   if(dates.length===0){ showToast('ไม่พบใบเบิกที่ยืนยันแล้วในช่วงวันที่นี้'); return; }
 
   const rows = [];
-  rows.push(['วันที่','No','รายการ','บิล','มูลค่า','ช่องทางชำระ','หมายเหตุ']);
-
   const summaryRows = [];
-  dates.forEach(d=>{
-    const rec = records[d];
-    const t = computeTotals(rec);
-    (rec.items||[]).filter(it=>it.name && it.name.trim()).forEach((it,idx)=>{
-      const payLabel = it.pay==='credit'?'บัตร':'เงินสด';
-      rows.push([d, idx+1, it.name, it.hasReceipt==='yes'?'มี':'ไม่มี', Number(it.amount)||0, payLabel, it.note||'']);
+  if(SIMPLE){
+    rows.push(['หมวด','วันที่','No','รายการ','มูลค่า','หมายเหตุ']);
+    dates.forEach(d=>{
+      const rec = records[d];
+      const t = computeTotals(rec);
+      (rec.items||[]).filter(it=>it.name && it.name.trim()).forEach((it,idx)=>{
+        rows.push([CAT_LABEL, d, idx+1, it.name, Number(it.amount)||0, it.note||'']);
+      });
+      summaryRows.push([CAT_LABEL, d, t.totalSpend]);
     });
-    summaryRows.push([d, t.carry, t.add, t.totalAvailable, t.cash, t.credit, t.totalSpend, t.remaining]);
-  });
-
-  rows.push([]);
-  rows.push(['สรุปรายวัน']);
-  rows.push(['วันที่','ยอดยกมา','เบิกเพิ่ม','รวมเป็นเงิน','ใช้เงินสด','ใช้บัตร','รวมรายจ่าย','คงเหลือเงินสด']);
-  summaryRows.forEach(r=>rows.push(r));
-
-  const grand = summaryRows.reduce((acc,r)=>{
-    acc.cash+=r[4]; acc.credit+=r[5]; acc.spend+=r[6];
-    return acc;
-  }, {cash:0,credit:0,spend:0});
-  rows.push([]);
-  rows.push(['รวมทั้งช่วง','','','', grand.cash, grand.credit, grand.spend, '']);
+    rows.push([]);
+    rows.push(['สรุปรายวัน']);
+    rows.push(['หมวด','วันที่','รวมทั้งหมด']);
+    summaryRows.forEach(r=>rows.push(r));
+    const total = summaryRows.reduce((a,r)=>a+r[2],0);
+    rows.push([]);
+    rows.push(['รวมทั้งช่วง','', total]);
+  } else {
+    rows.push(['หมวด','วันที่','No','รายการ','บิล','มูลค่า','ช่องทางชำระ','หมายเหตุ']);
+    dates.forEach(d=>{
+      const rec = records[d];
+      const t = computeTotals(rec);
+      (rec.items||[]).filter(it=>it.name && it.name.trim()).forEach((it,idx)=>{
+        const payLabel = it.pay==='credit'?'บัตร':'เงินสด';
+        rows.push([CAT_LABEL, d, idx+1, it.name, it.hasReceipt==='yes'?'มี':'ไม่มี', Number(it.amount)||0, payLabel, it.note||'']);
+      });
+      summaryRows.push([CAT_LABEL, d, t.carry, t.add, t.totalAvailable, t.cash, t.credit, t.totalSpend, t.remaining]);
+    });
+    rows.push([]);
+    rows.push(['สรุปรายวัน']);
+    rows.push(['หมวด','วันที่','ยอดยกมา','เบิกเพิ่ม','รวมเป็นเงิน','ใช้เงินสด','ใช้บัตร','รวมรายจ่าย','คงเหลือเงินสด']);
+    summaryRows.forEach(r=>rows.push(r));
+    const grand = summaryRows.reduce((acc,r)=>{
+      acc.cash+=r[5]; acc.credit+=r[6]; acc.spend+=r[7];
+      return acc;
+    }, {cash:0,credit:0,spend:0});
+    rows.push([]);
+    rows.push(['รวมทั้งช่วง','','','','', grand.cash, grand.credit, grand.spend, '']);
+  }
 
   const csvContent = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
   const blob = new Blob(['\uFEFF' + csvContent], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `WL-Cash_รายงาน_${from}_ถึง_${to}.csv`;
+  a.download = `WL-Cash_${CAT_LABEL}_รายงาน_${from}_ถึง_${to}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
