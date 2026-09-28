@@ -153,6 +153,8 @@
   .btn-primary:active{transform:scale(0.98);}
   .btn-ghost{background:#fff; color:var(--orange-dark); border:1.5px solid var(--orange);}
   .btn-green{background:var(--green); color:#fff; box-shadow:0 6px 16px rgba(22,163,74,0.3);}
+  .btn-cancel{background:#fff; color:var(--red); border:1.5px solid var(--red);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
   .btn-row{display:flex; gap:10px; margin-top:16px;}
   .btn-row .btn{flex:1;}
 
@@ -351,6 +353,7 @@
       <button class="btn btn-ghost" onclick="backToEdit()">← กลับไปแก้ไข</button>
       <button class="btn btn-green" id="confirmBtn" onclick="confirmSummary()">✓ ยืนยันบันทึก</button>
     </div>
+    <button class="btn btn-cancel" id="cancelConfirmBtn" onclick="cancelConfirm()" disabled style="margin-top:10px;">↩ ยกเลิกยืนยัน (กลับไปแก้ไข)</button>
   </section>
 
   <!-- ================= REPORT VIEW ================= -->
@@ -902,11 +905,29 @@ function buildSummaryView(){
     confirmBtn.textContent = '✓ ยืนยันแล้ว';
     confirmBtn.disabled = true;
     confirmBtn.style.opacity = '0.6';
+    document.getElementById('cancelConfirmBtn').disabled = false;
   } else {
     confirmBtn.textContent = '✓ ยืนยันบันทึก';
     confirmBtn.disabled = false;
     confirmBtn.style.opacity = '1';
+    document.getElementById('cancelConfirmBtn').disabled = true;
   }
+}
+
+function cancelConfirm(){
+  const rec = records[currentDate];
+  if(!rec || !rec.confirmed) return; // กดได้เฉพาะวันที่ยืนยันแล้ว
+  if(!confirm('ยกเลิกการยืนยันของ ' + fmtDateLabel(currentDate) + ' เพื่อกลับไปแก้ไข ใช่หรือไม่?')) return;
+  const draft = { ...rec, confirmed:false, updatedAt: Date.now() };
+  delete draft.confirmedAt;
+  delete records[currentDate];
+  drafts[currentDate] = draft;
+  saveJSON(K_RECORDS, records);
+  saveJSON(K_DRAFTS, drafts);
+  cloudSaveEntry(currentDate, draft);
+  loadDateIntoForm(currentDate, true); // โหลดกลับเป็นฉบับร่าง + ไปหน้าแก้ไข
+  renderRecordsList();
+  showToast('ยกเลิกการยืนยันแล้ว แก้ไขได้เลย');
 }
 
 function confirmSummary(){
