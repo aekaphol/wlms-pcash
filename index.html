@@ -71,6 +71,13 @@
     font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer; transition:.15s;}
   .cat-switch button.on{background:#fff; color:var(--orange-dark); box-shadow:0 2px 6px rgba(0,0,0,0.12);}
   body.simple .only-petty{display:none !important;}
+  body.dash section:not(#view-dash){display:none !important;}
+  body.dash nav.tabs, body.dash #footerBar, body.dash #statusChip, body.dash .date-pill{display:none !important;}
+  .cat-switch button{padding:5px 2px; font-size:12.5px;}
+  .dash-legend{display:flex; flex-wrap:wrap; gap:10px; margin:2px 0 8px; font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  .dash-legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px;}
+  .chart-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .diff-pos{color:var(--green) !important;} .diff-neg{color:var(--red) !important;}
   .only-simple{display:none;}
   body.simple .only-simple{display:block;}
   body.simple .money-box.only-simple{display:flex;}
@@ -265,6 +272,7 @@
     <div class="cat-switch">
       <button type="button" id="catBtn-petty" onclick="switchCategory('petty')">💵 เงินสดย่อย</button>
       <button type="button" id="catBtn-main" onclick="switchCategory('main')">🥩 วัตถุดิบหลัก</button>
+      <button type="button" id="catBtn-summary" onclick="switchCategory('summary')">📊 สรุป</button>
     </div>
     <div class="chip-row">
       <div id="statusChip" class="status-chip status-draft">🖊️ ฉบับร่าง</div>
@@ -280,6 +288,14 @@
 
   <!-- ================= ENTRY VIEW ================= -->
   <section id="view-entry" class="active">
+
+    <div class="card only-petty">
+      <h2>💰 ยอดขายประจำวัน</h2>
+      <div class="field">
+        <label>ยอดขายวันนี้ (บาท)</label>
+        <input type="number" id="salesInput" inputmode="decimal" placeholder="0" min="0">
+      </div>
+    </div>
 
     <div class="card only-petty">
       <h2><span class="num">1</span> ยอดเงินตั้งต้น</h2>
@@ -329,6 +345,10 @@
     <div class="card">
       <h2 id="summaryTitle">📊 สรุปใบเบิกเงินสดย่อย</h2>
       <div id="summaryDateLabel" class="small-note" style="font-size:14px; font-weight:600; color:var(--ink);"></div>
+      <div class="money-box only-petty" style="margin-top:10px;">
+        <span class="lbl">ยอดขายประจำวัน</span>
+        <span class="val" id="sumSales">฿0</span>
+      </div>
       <div class="grid2 only-petty" style="margin-top:12px;">
         <div class="box" style="background:var(--orange-light); border-radius:10px; padding:10px;">
           <div class="l" style="font-size:11px;color:var(--ink-soft);font-weight:600;">ยอดยกมา</div>
@@ -376,6 +396,33 @@
     <button class="btn btn-cancel" id="cancelConfirmBtn" onclick="cancelConfirm()" disabled style="margin-top:10px;">↩ ยกเลิกยืนยัน (กลับไปแก้ไข)</button>
   </section>
 
+  <!-- ================= DASHBOARD VIEW (หมวดสรุป) ================= -->
+  <section id="view-dash">
+    <div class="card">
+      <h2>📊 สรุปยอดขาย เทียบ เบิกจ่าย</h2>
+      <div class="grid2">
+        <div class="field"><label>ตั้งแต่วันที่</label><input type="date" id="dashFrom"></div>
+        <div class="field"><label>ถึงวันที่</label><input type="date" id="dashTo"></div>
+      </div>
+      <div class="totals-grid" id="dashTotals"></div>
+    </div>
+    <div class="card">
+      <h2>📈 กราฟรายวัน</h2>
+      <div class="dash-legend">
+        <span><i style="background:#f97316"></i>ยอดขาย</span>
+        <span><i style="background:#2563eb"></i>เงินสด</span>
+        <span><i style="background:#7c3aed"></i>บัตรเครดิต</span>
+        <span><i style="background:#93c5fd"></i>วัตถุดิบหลัก</span>
+      </div>
+      <div class="chart-scroll" id="dashChart"></div>
+      <div class="small-note">แท่งรายจ่ายเรียงซ้อนกัน = เงินสด + บัตรเครดิต (เงินสดย่อย) + วัตถุดิบหลัก · นับเฉพาะใบที่ "ยืนยันบันทึก" แล้ว</div>
+    </div>
+    <div class="card">
+      <h2>รายละเอียดรายวัน</h2>
+      <div id="dashList"></div>
+    </div>
+  </section>
+
   <!-- ================= REPORT VIEW ================= -->
   <section id="view-report">
     <div class="card">
@@ -421,7 +468,8 @@
 /* ===== หมวดหลัก: petty = เงินสดย่อย (ข้อมูลเดิม), main = วัตถุดิบหลัก ===== */
 const CATS = {
   petty: { label:'เงินสดย่อย',  suffix:'' },
-  main:  { label:'วัตถุดิบหลัก', suffix:'_main' }
+  main:  { label:'วัตถุดิบหลัก', suffix:'_main' },
+  summary: { label:'สรุป', suffix:'_summary' }
 };
 const K_CAT = 'wlcash_category_v1';
 let CAT = 'petty';
@@ -429,6 +477,9 @@ try{ const c = localStorage.getItem(K_CAT); if(c && CATS[c]) CAT = c; }catch(e){
 const CAT_LABEL = CATS[CAT].label;
 const SIMPLE = (CAT === 'main');   // วัตถุดิบหลัก: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
 if(SIMPLE) document.body.classList.add('simple');
+let dashCloud = { petty:null, main:null };
+const DASH = (CAT === 'summary');  // หมวดสรุป: แสดงกราฟ/รายละเอียดรวมทั้ง 2 หมวด
+if(DASH) document.body.classList.add('dash');
 const CAT_SUFFIX = CATS[CAT].suffix;
 const COL_ENTRIES = 'wlcash_entries' + CAT_SUFFIX;   // คอลเลกชันบน Firestore
 const DOC_MATERIALS = 'materials' + CAT_SUFFIX;
@@ -457,7 +508,7 @@ function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
 let materials = loadJSON(K_MATERIALS, null);
 if(SIMPLE && Array.isArray(materials) && materials.length === 0){ materials = null; } // เคยเปิดหมวดนี้ตอนยังว่าง -> ใส่ค่าเริ่มต้น
-if(!materials){ materials = (CAT === 'petty') ? DEFAULT_MATERIALS.slice() : DEFAULT_MATERIALS_MAIN.slice(); saveJSON(K_MATERIALS, materials); }
+if(!materials){ materials = (CAT === 'petty') ? DEFAULT_MATERIALS.slice() : (CAT === 'main' ? DEFAULT_MATERIALS_MAIN.slice() : []); saveJSON(K_MATERIALS, materials); }
 let records = loadJSON(K_RECORDS, {});
 let drafts  = loadJSON(K_DRAFTS, {});
 
@@ -579,12 +630,15 @@ document.getElementById('entryDate').addEventListener('change', (e)=>{
 document.getElementById('reportFrom').value = currentDate;
 document.getElementById('reportTo').value = currentDate;
 
-loadDateIntoForm(currentDate);
-renderRecordsList();
-setCloudChip(cloudReady ? 'syncing' : 'off');
-
-if(cloudReady){
-  initCloudSync();
+if(DASH){
+  initDashboard();
+} else {
+  loadDateIntoForm(currentDate);
+  renderRecordsList();
+  setCloudChip(cloudReady ? 'syncing' : 'off');
+  if(cloudReady){
+    initCloudSync();
+  }
 }
 
 async function initCloudSync(){
@@ -673,6 +727,7 @@ function loadDateIntoForm(dateStr, skipCloudRefresh){
   }
 
   document.getElementById('additionalCash').value = data.additionalCash || 0;
+  document.getElementById('salesInput').value = data.sales ? data.sales : '';
   currentItems = (data.items || []).map(it => ({...it}));
   if(currentItems.length === 0){ addItemRow(false); }
   renderItemRows();
@@ -731,6 +786,7 @@ function getFormData(){
   return {
     carryForward: getYesterdayRemain(currentDate),
     additionalCash: Number(document.getElementById('additionalCash').value)||0,
+    sales: Number(document.getElementById('salesInput').value)||0,
     items: currentItems.map(it=>({...it})),
     confirmed:false,
     updatedAt: Date.now()
@@ -882,6 +938,7 @@ function escapeAttr(s){
 
 /* ============ TOTALS ============ */
 document.getElementById('additionalCash').addEventListener('input', ()=>{ updateEntryTotals(); saveDraft(); });
+document.getElementById('salesInput').addEventListener('input', ()=>{ saveDraft(); });
 
 function computeTotals(data){
   const carry = Number(data.carryForward)||0;
@@ -895,7 +952,8 @@ function computeTotals(data){
   });
   const totalSpend = cash+credit;
   const remaining = totalAvailable - cash;
-  return { carry, add, totalAvailable, cash, credit, totalSpend, remaining };
+  const sales = Number(data.sales)||0;
+  return { carry, add, totalAvailable, cash, credit, totalSpend, remaining, sales };
 }
 
 function updateEntryTotals(){
@@ -945,6 +1003,7 @@ function buildSummaryView(){
   document.getElementById('summaryDateLabel').textContent = fmtDateLabel(currentDate);
   document.getElementById('sumCarry').textContent = fmtBaht(t.carry);
   document.getElementById('sumAdd').textContent = fmtBaht(t.add);
+  document.getElementById('sumSales').textContent = fmtBaht(t.sales);
 
   const tbody = document.getElementById('summaryTableBody');
   const items = (data.items||[]).filter(it => it.name && it.name.trim().length>0);
@@ -1031,7 +1090,7 @@ function renderRecordsList(){
     return `<div class="report-row">
       <div class="rr-head">
         <div class="d">${fmtDateLabel(d)}</div>
-        <div class="m">${count} รายการ</div>
+        <div class="m">${count} รายการ${(!SIMPLE && t.sales) ? ' · ขาย ' + fmtBaht(t.sales) : ''}</div>
       </div>
       ${SIMPLE ? `<div class="rr-stats" style="grid-template-columns:1fr;">
         <div class="rr-stat rr-highlight"><span class="rr-l">รวมทั้งหมด</span><span class="rr-v">${fmtBaht(t.totalSpend)}</span></div>
@@ -1088,18 +1147,18 @@ function generateCSV(){
         const payLabel = it.pay==='credit'?'บัตร':'เงินสด';
         rows.push([CAT_LABEL, d, idx+1, it.name, it.hasReceipt==='yes'?'มี':'ไม่มี', Number(it.amount)||0, payLabel, it.note||'']);
       });
-      summaryRows.push([CAT_LABEL, d, t.carry, t.add, t.totalAvailable, t.cash, t.credit, t.totalSpend, t.remaining]);
+      summaryRows.push([CAT_LABEL, d, t.carry, t.add, t.totalAvailable, t.cash, t.credit, t.totalSpend, t.remaining, t.sales]);
     });
     rows.push([]);
     rows.push(['สรุปรายวัน']);
-    rows.push(['หมวด','วันที่','ยอดยกมา','เบิกเพิ่ม','รวมเป็นเงิน','ใช้เงินสด','ใช้บัตร','รวมรายจ่าย','คงเหลือเงินสด']);
+    rows.push(['หมวด','วันที่','ยอดยกมา','เบิกเพิ่ม','รวมเป็นเงิน','ใช้เงินสด','ใช้บัตร','รวมรายจ่าย','คงเหลือเงินสด','ยอดขายประจำวัน']);
     summaryRows.forEach(r=>rows.push(r));
     const grand = summaryRows.reduce((acc,r)=>{
-      acc.cash+=r[5]; acc.credit+=r[6]; acc.spend+=r[7];
+      acc.cash+=r[5]; acc.credit+=r[6]; acc.spend+=r[7]; acc.sales+=r[9];
       return acc;
-    }, {cash:0,credit:0,spend:0});
+    }, {cash:0,credit:0,spend:0,sales:0});
     rows.push([]);
-    rows.push(['รวมทั้งช่วง','','','','', grand.cash, grand.credit, grand.spend, '']);
+    rows.push(['รวมทั้งช่วง','','','','', grand.cash, grand.credit, grand.spend, '', grand.sales]);
   }
 
   const csvContent = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
@@ -1124,6 +1183,133 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
 }
+/* ============ DASHBOARD (หมวดสรุป) ============ */
+function dashBestEntries(cat){
+  // รวมข้อมูลในเครื่อง + คลาวด์ เลือกชุดที่อัปเดตล่าสุดของแต่ละวัน
+  const suf = CATS[cat].suffix;
+  const rec = loadJSON('wlcash_records_v1' + suf, {});
+  const dr  = loadJSON('wlcash_drafts_v1' + suf, {});
+  const out = {};
+  [dashCloud[cat] || {}, dr, rec].forEach(src=>{
+    Object.keys(src).forEach(d=>{
+      const e = src[d];
+      if(!out[d] || (e.updatedAt||0) >= (out[d].updatedAt||0)) out[d] = e;
+    });
+  });
+  return out;
+}
+
+function initDashboard(){
+  const to = todayStr();
+  const fromD = new Date(to + 'T00:00:00'); fromD.setDate(fromD.getDate() - 13);
+  document.getElementById('dashFrom').value = toDateStr(fromD);
+  document.getElementById('dashTo').value = to;
+  ['dashFrom','dashTo'].forEach(id=> document.getElementById(id).addEventListener('change', renderDashboard));
+  document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById('view-dash').classList.add('active');
+  renderDashboard();
+  setCloudChip(cloudReady ? 'syncing' : 'off');
+  if(cloudReady){
+    ['petty','main'].forEach(c=>{
+      db.collection('wlcash_entries' + CATS[c].suffix).onSnapshot(snap=>{
+        const m = {}; snap.forEach(doc => m[doc.id] = doc.data());
+        dashCloud[c] = m;
+        setCloudChip('on');
+        renderDashboard();
+      }, err=>{ console.warn('dashboard listener error', err); setCloudChip('off'); });
+    });
+  }
+}
+
+function niceMax(v){
+  if(v <= 0) return 100;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+function fmtAxis(v){ return v >= 1000 ? (v/1000).toLocaleString('th-TH', {maximumFractionDigits:1}) + 'k' : String(v); }
+
+function renderDashboard(){
+  const from = document.getElementById('dashFrom').value;
+  const to = document.getElementById('dashTo').value;
+  const chartEl = document.getElementById('dashChart');
+  const listEl = document.getElementById('dashList');
+  const totalsEl = document.getElementById('dashTotals');
+  if(!from || !to || from > to){
+    totalsEl.innerHTML = ''; chartEl.innerHTML = ''; listEl.innerHTML = '<div class="empty">กรุณาเลือกช่วงวันที่ให้ถูกต้อง</div>';
+    return;
+  }
+  const pet = dashBestEntries('petty'), man = dashBestEntries('main');
+  const days = [];
+  const cur = new Date(from + 'T00:00:00'), end = new Date(to + 'T00:00:00');
+  for(let g = 0; cur <= end && g < 366; g++){ days.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
+
+  const rows = days.map(d=>{
+    const p = (pet[d] && pet[d].confirmed) ? pet[d] : null;
+    const m = (man[d] && man[d].confirmed) ? man[d] : null;
+    const pt = p ? computeTotals(p) : null, mt = m ? computeTotals(m) : null;
+    const sales = pt ? pt.sales : 0;
+    const petCash = pt ? pt.cash : 0;
+    const petCredit = pt ? pt.credit : 0;
+    const petSpend = pt ? pt.totalSpend : 0;
+    const mainTotal = mt ? mt.totalSpend : 0;
+    return { d, hasP: !!p, hasM: !!m, sales, petCash, petCredit, petSpend, mainTotal, expense: petSpend + mainTotal, diff: sales - petSpend - mainTotal };
+  });
+
+  // ---- totals
+  const sum = k => rows.reduce((a,r)=>a + r[k], 0);
+  const tSales = sum('sales'), tExp = sum('expense'), tDiff = tSales - tExp;
+  totalsEl.innerHTML = `
+    <div class="box"><div class="l">ยอดขายรวม</div><div class="v">${fmtBaht(tSales)}</div></div>
+    <div class="box"><div class="l">รายจ่ายรวม</div><div class="v">${fmtBaht(tExp)}</div></div>
+    <div class="box"><div class="l">ส่วนต่าง</div><div class="v ${tDiff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(tDiff)}</div></div>`;
+
+  // ---- chart (SVG)
+  const maxV = niceMax(Math.max(...rows.map(r => Math.max(r.sales, r.expense)), 0));
+  const gW = 46, bW = 16, L = 40, T = 12, H = 190, B = 28;
+  const W = L + days.length * gW + 6;
+  const y = v => T + H - (v / maxV) * H;
+  let svg = `<svg width="${W}" height="${T + H + B}" viewBox="0 0 ${W} ${T + H + B}" role="img" aria-label="กราฟยอดขายเทียบเบิกจ่ายรายวัน" style="display:block;">`;
+  for(let i = 0; i <= 4; i++){
+    const v = maxV * i / 4, yy = y(v);
+    svg += `<line x1="${L}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#f0e0cf" stroke-width="1"/>`;
+    svg += `<text x="${L - 5}" y="${yy + 3.5}" font-size="10" text-anchor="end" fill="#7a6f63">${fmtAxis(v)}</text>`;
+  }
+  rows.forEach((r, i)=>{
+    const x0 = L + i * gW + 6;
+    const lbl = r.d.slice(8) + '/' + r.d.slice(5,7);
+    svg += `<text x="${x0 + bW}" y="${T + H + 16}" font-size="10" text-anchor="middle" fill="#7a6f63">${lbl}</text>`;
+    const tip = `${fmtDateLabel(r.d)}\nยอดขาย ${fmtBaht(r.sales)}\nเงินสด ${fmtBaht(r.petCash)}\nบัตรเครดิต ${fmtBaht(r.petCredit)}\nวัตถุดิบหลัก ${fmtBaht(r.mainTotal)}`;
+    if(r.sales > 0) svg += `<rect x="${x0}" y="${y(r.sales)}" width="${bW}" height="${T + H - y(r.sales)}" rx="2" fill="#f97316"><title>${tip}</title></rect>`;
+    let base = T + H;
+    if(r.petCash > 0){ const h = (r.petCash / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#2563eb"><title>${tip}</title></rect>`; base -= h; }
+    if(r.petCredit > 0){ const h = (r.petCredit / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#7c3aed"><title>${tip}</title></rect>`; base -= h; }
+    if(r.mainTotal > 0){ const h = (r.mainTotal / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#93c5fd"><title>${tip}</title></rect>`; }
+  });
+  svg += '</svg>';
+  chartEl.innerHTML = svg;
+
+  // ---- daily list (newest first)
+  const listRows = rows.filter(r => r.hasP || r.hasM).reverse();
+  if(listRows.length === 0){
+    listEl.innerHTML = '<div class="empty">ยังไม่มีใบที่ยืนยันบันทึกในช่วงวันที่นี้</div>';
+    return;
+  }
+  listEl.innerHTML = listRows.map(r=>`
+    <div class="report-row">
+      <div class="rr-head">
+        <div class="d">${fmtDateLabel(r.d)}</div>
+        <div class="m">รวมจ่าย ${fmtBaht(r.expense)}</div>
+      </div>
+      <div class="rr-stats">
+        <div class="rr-stat"><span class="rr-l">ยอดขาย</span><span class="rr-v">${r.hasP ? fmtBaht(r.sales) : '–'}</span></div>
+        <div class="rr-stat"><span class="rr-l">เงินสดย่อย</span><span class="rr-v">${r.hasP ? fmtBaht(r.petSpend) : '–'}</span></div>
+        <div class="rr-stat"><span class="rr-l">วัตถุดิบหลัก</span><span class="rr-v">${r.hasM ? fmtBaht(r.mainTotal) : '–'}</span></div>
+        <div class="rr-stat rr-highlight"><span class="rr-l">ส่วนต่าง</span><span class="rr-v ${r.diff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(r.diff)}</span></div>
+      </div>
+    </div>`).join('');
+}
+
 /* ============ ACCESS LOCK ============ */
 const ACCESS_CODE = '7600';
 const K_UNLOCK = 'wlcash_unlocked_v1';
