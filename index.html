@@ -194,6 +194,7 @@
   .report-row .d{font-weight:600; font-size:14px;}
   .report-row .m{font-size:12px; color:var(--ink-soft);}
   .rr-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  .rr-stats.rr-5{grid-template-columns:repeat(5,1fr);}
   .rr-stat{background:var(--orange-light); border-radius:9px; padding:6px 4px; text-align:center;}
   .rr-stat.rr-highlight{background:#fff4ea; border:1px solid var(--orange);}
   .rr-stat .rr-l{display:block; font-size:10px; color:var(--ink-soft); font-weight:600; margin-bottom:2px;}
@@ -414,9 +415,10 @@
         <span><i style="background:#2563eb"></i>เงินสด</span>
         <span><i style="background:#7c3aed"></i>บัตรเครดิต</span>
         <span><i style="background:#93c5fd"></i>วัตถุดิบหลัก</span>
+        <span><i style="background:#16a34a"></i>สั่งออนไลน์</span>
       </div>
       <div class="chart-scroll" id="dashChart"></div>
-      <div class="small-note">แท่งรายจ่ายเรียงซ้อนกัน = เงินสด + บัตรเครดิต (เงินสดย่อย) + วัตถุดิบหลัก · นับเฉพาะใบที่ "ยืนยันบันทึก" แล้ว</div>
+      <div class="small-note">แท่งรายจ่ายเรียงซ้อนกัน = เงินสด + บัตรเครดิต (เงินสดย่อย) + วัตถุดิบหลัก + สั่งออนไลน์ · นับเฉพาะใบที่ "ยืนยันบันทึก" แล้ว</div>
     </div>
     <div class="card">
       <h2>รายละเอียดรายวัน</h2>
@@ -479,7 +481,7 @@ try{ const c = localStorage.getItem(K_CAT); if(c && CATS[c]) CAT = c; }catch(e){
 const CAT_LABEL = CATS[CAT].label;
 const SIMPLE = (CAT === 'main' || CAT === 'online');   // วัตถุดิบหลัก/สั่งออนไลน์: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
 if(SIMPLE) document.body.classList.add('simple');
-let dashCloud = { petty:null, main:null };
+let dashCloud = { petty:null, main:null, online:null };
 const DASH = (CAT === 'summary');  // หมวดสรุป: แสดงกราฟ/รายละเอียดรวมทั้ง 2 หมวด
 if(DASH) document.body.classList.add('dash');
 const CAT_SUFFIX = CATS[CAT].suffix;
@@ -1220,7 +1222,7 @@ function initDashboard(){
   renderDashboard();
   setCloudChip(cloudReady ? 'syncing' : 'off');
   if(cloudReady){
-    ['petty','main'].forEach(c=>{
+    ['petty','main','online'].forEach(c=>{
       db.collection('wlcash_entries' + CATS[c].suffix).onSnapshot(snap=>{
         const m = {}; snap.forEach(doc => m[doc.id] = doc.data());
         dashCloud[c] = m;
@@ -1249,7 +1251,7 @@ function renderDashboard(){
     totalsEl.innerHTML = ''; chartEl.innerHTML = ''; listEl.innerHTML = '<div class="empty">กรุณาเลือกช่วงวันที่ให้ถูกต้อง</div>';
     return;
   }
-  const pet = dashBestEntries('petty'), man = dashBestEntries('main');
+  const pet = dashBestEntries('petty'), man = dashBestEntries('main'), onl = dashBestEntries('online');
   const days = [];
   const cur = new Date(from + 'T00:00:00'), end = new Date(to + 'T00:00:00');
   for(let g = 0; cur <= end && g < 366; g++){ days.push(toDateStr(cur)); cur.setDate(cur.getDate() + 1); }
@@ -1257,13 +1259,15 @@ function renderDashboard(){
   const rows = days.map(d=>{
     const p = (pet[d] && pet[d].confirmed) ? pet[d] : null;
     const m = (man[d] && man[d].confirmed) ? man[d] : null;
-    const pt = p ? computeTotals(p) : null, mt = m ? computeTotals(m) : null;
+    const o = (onl[d] && onl[d].confirmed) ? onl[d] : null;
+    const pt = p ? computeTotals(p) : null, mt = m ? computeTotals(m) : null, ot = o ? computeTotals(o) : null;
     const sales = pt ? pt.sales : 0;
     const petCash = pt ? pt.cash : 0;
     const petCredit = pt ? pt.credit : 0;
     const petSpend = pt ? pt.totalSpend : 0;
     const mainTotal = mt ? mt.totalSpend : 0;
-    return { d, hasP: !!p, hasM: !!m, sales, petCash, petCredit, petSpend, mainTotal, expense: petSpend + mainTotal, diff: sales - petSpend - mainTotal };
+    const onlineTotal = ot ? ot.totalSpend : 0;
+    return { d, hasP: !!p, hasM: !!m, hasO: !!o, sales, petCash, petCredit, petSpend, mainTotal, onlineTotal, expense: petSpend + mainTotal + onlineTotal, diff: sales - petSpend - mainTotal - onlineTotal };
   });
 
   // ---- totals
@@ -1289,18 +1293,19 @@ function renderDashboard(){
     const x0 = L + i * gW + 6;
     const lbl = r.d.slice(8) + '/' + r.d.slice(5,7);
     svg += `<text x="${x0 + bW}" y="${T + H + 16}" font-size="10" text-anchor="middle" fill="#7a6f63">${lbl}</text>`;
-    const tip = `${fmtDateLabel(r.d)}\nยอดขาย ${fmtBaht(r.sales)}\nเงินสด ${fmtBaht(r.petCash)}\nบัตรเครดิต ${fmtBaht(r.petCredit)}\nวัตถุดิบหลัก ${fmtBaht(r.mainTotal)}`;
+    const tip = `${fmtDateLabel(r.d)}\nยอดขาย ${fmtBaht(r.sales)}\nเงินสด ${fmtBaht(r.petCash)}\nบัตรเครดิต ${fmtBaht(r.petCredit)}\nวัตถุดิบหลัก ${fmtBaht(r.mainTotal)}\nสั่งออนไลน์ ${fmtBaht(r.onlineTotal)}`;
     if(r.sales > 0) svg += `<rect x="${x0}" y="${y(r.sales)}" width="${bW}" height="${T + H - y(r.sales)}" rx="2" fill="#f97316"><title>${tip}</title></rect>`;
     let base = T + H;
     if(r.petCash > 0){ const h = (r.petCash / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#2563eb"><title>${tip}</title></rect>`; base -= h; }
     if(r.petCredit > 0){ const h = (r.petCredit / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#7c3aed"><title>${tip}</title></rect>`; base -= h; }
-    if(r.mainTotal > 0){ const h = (r.mainTotal / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#93c5fd"><title>${tip}</title></rect>`; }
+    if(r.mainTotal > 0){ const h = (r.mainTotal / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#93c5fd"><title>${tip}</title></rect>`; base -= h; }
+    if(r.onlineTotal > 0){ const h = (r.onlineTotal / maxV) * H; svg += `<rect x="${x0 + bW + 2}" y="${base - h}" width="${bW}" height="${h}" fill="#16a34a"><title>${tip}</title></rect>`; }
   });
   svg += '</svg>';
   chartEl.innerHTML = svg;
 
   // ---- daily list (newest first)
-  const listRows = rows.filter(r => r.hasP || r.hasM).reverse();
+  const listRows = rows.filter(r => r.hasP || r.hasM || r.hasO).reverse();
   if(listRows.length === 0){
     listEl.innerHTML = '<div class="empty">ยังไม่มีใบที่ยืนยันบันทึกในช่วงวันที่นี้</div>';
     return;
@@ -1311,10 +1316,10 @@ function renderDashboard(){
         <div class="d">${fmtDateLabel(r.d)}</div>
         <div class="m">รวมจ่าย ${fmtBaht(r.expense)}</div>
       </div>
-      <div class="rr-stats">
-        <div class="rr-stat"><span class="rr-l">ยอดขาย</span><span class="rr-v">${r.hasP ? fmtBaht(r.sales) : '–'}</span></div>
+      <div class="rr-stats rr-5"><span class="rr-v">${r.hasP ? fmtBaht(r.sales) : '–'}</span></div>
         <div class="rr-stat"><span class="rr-l">เงินสดย่อย</span><span class="rr-v">${r.hasP ? fmtBaht(r.petSpend) : '–'}</span></div>
         <div class="rr-stat"><span class="rr-l">วัตถุดิบหลัก</span><span class="rr-v">${r.hasM ? fmtBaht(r.mainTotal) : '–'}</span></div>
+        <div class="rr-stat"><span class="rr-l">สั่งออนไลน์</span><span class="rr-v">${r.hasO ? fmtBaht(r.onlineTotal) : '–'}</span></div>
         <div class="rr-stat rr-highlight"><span class="rr-l">ส่วนต่าง</span><span class="rr-v ${r.diff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(r.diff)}</span></div>
       </div>
     </div>`).join('');
