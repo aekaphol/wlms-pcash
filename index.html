@@ -195,6 +195,10 @@
   .report-row .m{font-size:12px; color:var(--ink-soft);}
   .rr-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
   .rr-stats.rr-5{grid-template-columns:repeat(5,1fr);}
+  .rr-stats.rr-6{grid-template-columns:repeat(3,1fr); gap:8px;}
+  .rr-stats.rr-6 .rr-stat{padding:9px 4px;}
+  .rr-stats.rr-6 .rr-l{font-size:10.5px;}
+  .rr-stats.rr-6 .rr-v{font-size:13.5px;}
   .rr-stat{background:var(--orange-light); border-radius:9px; padding:6px 4px; text-align:center;}
   .rr-stat.rr-highlight{background:#fff4ea; border:1px solid var(--orange);}
   .rr-stat .rr-l{display:block; font-size:10px; color:var(--ink-soft); font-weight:600; margin-bottom:2px;}
@@ -1316,8 +1320,10 @@ function renderDashboard(){
         <div class="d">${fmtDateLabel(r.d)}</div>
         <div class="m">รวมจ่าย ${fmtBaht(r.expense)}</div>
       </div>
-      <div class="rr-stats rr-5"><span class="rr-v">${r.hasP ? fmtBaht(r.sales) : '–'}</span></div>
-        <div class="rr-stat"><span class="rr-l">เงินสดย่อย</span><span class="rr-v">${r.hasP ? fmtBaht(r.petSpend) : '–'}</span></div>
+      <div class="rr-stats rr-6">
+        <div class="rr-stat"><span class="rr-l">ยอดขาย</span><span class="rr-v">${r.hasP ? fmtBaht(r.sales) : '–'}</span></div>
+        <div class="rr-stat"><span class="rr-l">เงินสดย่อย</span><span class="rr-v">${r.hasP ? fmtBaht(r.petCash) : '–'}</span></div>
+        <div class="rr-stat"><span class="rr-l">บัตรเครดิต</span><span class="rr-v">${r.hasP ? fmtBaht(r.petCredit) : '–'}</span></div>
         <div class="rr-stat"><span class="rr-l">วัตถุดิบหลัก</span><span class="rr-v">${r.hasM ? fmtBaht(r.mainTotal) : '–'}</span></div>
         <div class="rr-stat"><span class="rr-l">สั่งออนไลน์</span><span class="rr-v">${r.hasO ? fmtBaht(r.onlineTotal) : '–'}</span></div>
         <div class="rr-stat rr-highlight"><span class="rr-l">ส่วนต่าง</span><span class="rr-v ${r.diff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(r.diff)}</span></div>
