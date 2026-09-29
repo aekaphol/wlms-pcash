@@ -61,7 +61,7 @@
     display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;
     font-family:'Kanit','Noto Sans Thai',sans-serif; flex:none;
   }
-  header.top h1{font-size:15px; font-weight:600; line-height:1.2;}
+  header.top h1{font-size:15px; font-weight:600; line-height:1.2; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans Thai',sans-serif;}
   .date-pill{
     background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35);
     border-radius:11px; padding:4px 8px; display:flex; align-items:center; gap:5px;
@@ -71,8 +71,8 @@
     font-size:12.5px; font-weight:600; outline:none; color-scheme: dark;
   }
   .cat-switch{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; background:rgba(255,255,255,0.18); padding:3px; border-radius:11px;}
-  .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:'Kanit','Sarabun','Noto Sans Thai',sans-serif;
-    font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer; transition:.15s;}
+  .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans Thai',sans-serif;
+    font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer;}
   .cat-switch button.on{background:#fff; color:var(--orange-dark); box-shadow:0 2px 6px rgba(0,0,0,0.12);}
   body.simple .only-petty{display:none !important;}
   body.dash section:not(#view-dash){display:none !important;}
@@ -486,19 +486,11 @@ const CATS = {
 const K_CAT = 'wlcash_category_v1';
 let CAT = 'petty';
 try{ const c = localStorage.getItem(K_CAT); if(c && CATS[c]) CAT = c; }catch(e){}
-const CAT_LABEL = CATS[CAT].label;
-const SIMPLE = (CAT === 'main' || CAT === 'online');   // วัตถุดิบหลัก/สั่งออนไลน์: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
-if(SIMPLE) document.body.classList.add('simple');
+let CAT_LABEL, SIMPLE, DASH, CAT_SUFFIX, COL_ENTRIES, DOC_MATERIALS, K_MATERIALS, K_RECORDS, K_DRAFTS;
 let dashCloud = { petty:null, main:null, online:null };
-const DASH = (CAT === 'summary');  // หมวดสรุป: แสดงกราฟ/รายละเอียดรวมทั้ง 2 หมวด
-if(DASH) document.body.classList.add('dash');
-const CAT_SUFFIX = CATS[CAT].suffix;
-const COL_ENTRIES = 'wlcash_entries' + CAT_SUFFIX;   // คอลเลกชันบน Firestore
-const DOC_MATERIALS = 'materials' + CAT_SUFFIX;
-
-const K_MATERIALS = 'wlcash_materials_v1' + CAT_SUFFIX;
-const K_RECORDS   = 'wlcash_records_v1' + CAT_SUFFIX;   // { 'YYYY-MM-DD': {carryForward, additionalCash, items:[...], confirmed, confirmedAt} }
-const K_DRAFTS    = 'wlcash_drafts_v1' + CAT_SUFFIX;    // same shape, unconfirmed working copies
+let unsubEntries = null;   // ยกเลิกการฟังของหมวดเดิมตอนสลับหมวด (กันข้อมูลปนกัน)
+let unsubDash = [];        // ตัวยกเลิกการฟังของหมวดสรุป (มีหลายหมวดพร้อมกัน)
+let dashListenersBound = false;
 
 const DEFAULT_MATERIALS = [
   'ธนพิริยะ','แมคโคร','พริกขี้หนู','พริกแดง','พริกเขียว','กระเทียมเล็ก','กระเทียมใหญ่','ผัก',
@@ -525,12 +517,40 @@ function loadJSON(key, fallback){
 }
 function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-let materials = loadJSON(K_MATERIALS, null);
-if(SIMPLE && Array.isArray(materials) && materials.length === 0){ materials = null; } // เคยเปิดหมวดนี้ตอนยังว่าง -> ใส่ค่าเริ่มต้น
 const DEFAULT_MATERIALS_BY_CAT = { petty:DEFAULT_MATERIALS, main:DEFAULT_MATERIALS_MAIN, online:DEFAULT_MATERIALS_ONLINE };
-if(!materials){ materials = (DEFAULT_MATERIALS_BY_CAT[CAT] || []).slice(); saveJSON(K_MATERIALS, materials); }
-let records = loadJSON(K_RECORDS, {});
-let drafts  = loadJSON(K_DRAFTS, {});
+let materials, records, drafts;
+
+function applyCategory(c){
+  // รวมทุกอย่างที่ขึ้นกับ "หมวด" ไว้ที่เดียว เรียกได้ทั้งตอนเปิดแอปครั้งแรกและตอนสลับหมวด (ไม่ต้อง reload หน้า)
+  CAT = c;
+  CAT_LABEL = CATS[CAT].label;
+  SIMPLE = (CAT === 'main' || CAT === 'online');   // วัตถุดิบหลัก/สั่งออนไลน์: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
+  DASH = (CAT === 'summary');                       // หมวดสรุป: แสดงกราฟ/รายละเอียดรวมทั้ง 2 หมวด
+  CAT_SUFFIX = CATS[CAT].suffix;
+  COL_ENTRIES = 'wlcash_entries' + CAT_SUFFIX;       // คอลเลกชันบน Firestore
+  DOC_MATERIALS = 'materials' + CAT_SUFFIX;
+  K_MATERIALS = 'wlcash_materials_v1' + CAT_SUFFIX;
+  K_RECORDS   = 'wlcash_records_v1' + CAT_SUFFIX;    // { 'YYYY-MM-DD': {carryForward, additionalCash, items:[...], confirmed, confirmedAt} }
+  K_DRAFTS    = 'wlcash_drafts_v1' + CAT_SUFFIX;     // same shape, unconfirmed working copies
+
+  materials = loadJSON(K_MATERIALS, null);
+  if(SIMPLE && Array.isArray(materials) && materials.length === 0){ materials = null; } // เคยเปิดหมวดนี้ตอนยังว่าง -> ใส่ค่าเริ่มต้น
+  if(!materials){ materials = (DEFAULT_MATERIALS_BY_CAT[CAT] || []).slice(); saveJSON(K_MATERIALS, materials); }
+  records = loadJSON(K_RECORDS, {});
+  drafts  = loadJSON(K_DRAFTS, {});
+
+  document.body.classList.toggle('simple', SIMPLE);
+  document.body.classList.toggle('dash', DASH);
+  document.querySelectorAll('.cat-switch button').forEach(b=>b.classList.remove('on'));
+  const btn = document.getElementById('catBtn-' + CAT);
+  if(btn) btn.classList.add('on');
+  document.getElementById('summaryTitle').textContent = '📊 สรุป · ' + CAT_LABEL;
+  document.getElementById('recordsTitle').textContent = 'ใบเบิกที่บันทึกไว้ · ' + CAT_LABEL;
+  document.title = 'WL-Cash | ' + CAT_LABEL;
+  document.getElementById('stepNum2').textContent = SIMPLE ? '1' : '2';
+  document.getElementById('stepNum3').textContent = SIMPLE ? '2' : '3';
+}
+applyCategory(CAT);
 
 /* ============ CLOUD SYNC (Firebase Firestore) ============
    ถ้าตั้งค่า firebase-config.js ไว้ถูกต้อง แอปจะซิงก์ข้อมูลผ่าน Firestore
@@ -622,51 +642,60 @@ function fmtDateLabel(dateStr){
   return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
 }
 
-/* ============ CATEGORY (เงินสดย่อย / วัตถุดิบหลัก) ============ */
-document.getElementById('catBtn-' + CAT).classList.add('on');
-document.getElementById('summaryTitle').textContent = '📊 สรุป · ' + CAT_LABEL;
-document.getElementById('recordsTitle').textContent = 'ใบเบิกที่บันทึกไว้ · ' + CAT_LABEL;
-document.title = 'WL-Cash | ' + CAT_LABEL;
-if(SIMPLE){ document.getElementById('stepNum2').textContent = '1'; document.getElementById('stepNum3').textContent = '2'; }
-
 async function switchCategory(c){
   if(c === CAT || !CATS[c]) return;
-  // ให้ปุ่มที่กดสว่างขึ้นทันที + ค่อยๆจางหน้าจอ ก่อนสลับหมวด (กันไม่ให้ดูเหมือนจอเด้ง/กระตุก)
+  // ให้ปุ่มที่กดสว่างขึ้นทันที เห็นผลว่ากดอะไรไปโดยไม่ต้องรอ
   document.querySelectorAll('.cat-switch button').forEach(b=>b.classList.remove('on'));
   const nextBtn = document.getElementById('catBtn-' + c);
   if(nextBtn) nextBtn.classList.add('on');
-  document.getElementById('app').classList.add('fade-out');
-  document.getElementById('lockScreen').classList.add('fade-out');
-  // ส่งฉบับร่างที่ค้างอยู่ขึ้นคลาวด์ก่อนสลับหมวด (รอไม่เกิน 1.5 วินาที)
+
+  // เลิกฟังข้อมูลเรียลไทม์ของหมวดเดิมก่อน กันข้อมูลปนกันข้ามหมวด
+  if(unsubEntries){ unsubEntries(); unsubEntries = null; }
+  unsubDash.forEach(fn=>fn()); unsubDash = [];
+
+  // ส่งฉบับร่างที่ค้างอยู่ขึ้นคลาวด์แบบไม่รอผล (กันไม่ให้การสลับหมวดค้าง/ดีเลย์)
   if(saveDraftTimer){
     clearTimeout(saveDraftTimer); saveDraftTimer = null;
     if(cloudReady && drafts[currentDate]){
-      try{ await Promise.race([cloudSaveEntry(currentDate, drafts[currentDate]), new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+      cloudSaveEntry(currentDate, drafts[currentDate]).catch(()=>{});
     }
   }
+
   try{ localStorage.setItem(K_CAT, c); }catch(e){}
-  await new Promise(r=>setTimeout(r, 150)); // ให้ทันเห็น transition จางหายก่อน reload
-  location.reload();
+
+  // สลับเนื้อหาทันที พร้อมเฟดสั้นๆ (ไม่บล็อกการทำงาน) กันดูเหมือนเนื้อหาเด้ง/กระตุก
+  const app = document.getElementById('app');
+  app.classList.add('fade-out');
+  requestAnimationFrame(()=>{
+    applyCategory(c);
+    renderMaterialsDatalist();
+    enterCategoryView();
+    requestAnimationFrame(()=> app.classList.remove('fade-out'));
+  });
 }
 
 /* ============ INIT ============ */
-document.getElementById('entryDate').value = currentDate;
 document.getElementById('entryDate').addEventListener('change', (e)=>{
   loadDateIntoForm(e.target.value);
 });
-document.getElementById('reportFrom').value = currentDate;
-document.getElementById('reportTo').value = currentDate;
 
-if(DASH){
-  initDashboard();
-} else {
-  loadDateIntoForm(currentDate);
-  renderRecordsList();
-  setCloudChip(cloudReady ? 'syncing' : 'off');
-  if(cloudReady){
-    initCloudSync();
+function enterCategoryView(){
+  if(DASH){
+    initDashboard();
+  } else {
+    currentDate = todayStr();
+    document.getElementById('entryDate').value = currentDate;
+    document.getElementById('reportFrom').value = currentDate;
+    document.getElementById('reportTo').value = currentDate;
+    loadDateIntoForm(currentDate);
+    renderRecordsList();
+    setCloudChip(cloudReady ? 'syncing' : 'off');
+    if(cloudReady){
+      initCloudSync();
+    }
   }
 }
+enterCategoryView();
 
 async function initCloudSync(){
   // ดึงข้อมูลล่าสุดจากคลาวด์มาผสานกับข้อมูลในเครื่อง แล้วรีเฟรชหน้าจอ
@@ -702,7 +731,7 @@ async function initCloudSync(){
   }
 
   // ฟังการเปลี่ยนแปลงแบบเรียลไทม์จากเครื่องอื่น (อัปเดตรายการในหน้ารายงานอัตโนมัติ)
-  db.collection(COL_ENTRIES).onSnapshot(snap=>{
+  unsubEntries = db.collection(COL_ENTRIES).onSnapshot(snap=>{
     let changed = false;
     snap.docChanges().forEach(ch=>{
       const d = ch.doc.id;
@@ -1231,19 +1260,23 @@ function initDashboard(){
   const fromD = new Date(to + 'T00:00:00'); fromD.setDate(fromD.getDate() - 13);
   document.getElementById('dashFrom').value = toDateStr(fromD);
   document.getElementById('dashTo').value = to;
-  ['dashFrom','dashTo'].forEach(id=> document.getElementById(id).addEventListener('change', renderDashboard));
+  if(!dashListenersBound){
+    ['dashFrom','dashTo'].forEach(id=> document.getElementById(id).addEventListener('change', renderDashboard));
+    dashListenersBound = true;
+  }
   document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
   document.getElementById('view-dash').classList.add('active');
   renderDashboard();
   setCloudChip(cloudReady ? 'syncing' : 'off');
   if(cloudReady){
     ['petty','main','online'].forEach(c=>{
-      db.collection('wlcash_entries' + CATS[c].suffix).onSnapshot(snap=>{
+      const unsub = db.collection('wlcash_entries' + CATS[c].suffix).onSnapshot(snap=>{
         const m = {}; snap.forEach(doc => m[doc.id] = doc.data());
         dashCloud[c] = m;
         setCloudChip('on');
         renderDashboard();
       }, err=>{ console.warn('dashboard listener error', err); setCloudChip('off'); });
+      unsubDash.push(unsub);
     });
   }
 }
