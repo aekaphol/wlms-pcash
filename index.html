@@ -37,9 +37,13 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--orange-lighter);color:var(--ink);
-    font-family:'Sarabun','Kanit',sans-serif; -webkit-font-smoothing:antialiased;}
+    font-family:'Sarabun','Noto Sans Thai','Kanit',sans-serif; -webkit-font-smoothing:antialiased;}
+  #app{transition:opacity .16s ease; opacity:1;}
+  #app.fade-out{opacity:0;}
+  #lockScreen{transition:opacity .16s ease;}
+  #lockScreen.fade-out{opacity:0;}
   body{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}
-  h1,h2,h3{font-family:'Kanit','Sarabun',sans-serif; margin:0;}
+  h1,h2,h3{font-family:'Kanit','Sarabun','Noto Sans Thai',sans-serif; margin:0;}
   #app{max-width:860px;margin:0 auto;padding:0 14px;}
 
   header.top{
@@ -55,7 +59,7 @@
   header.top .logo{
     width:28px;height:28px;border-radius:8px;background:#fff;color:var(--orange-dark);
     display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;
-    font-family:'Kanit',sans-serif; flex:none;
+    font-family:'Kanit','Noto Sans Thai',sans-serif; flex:none;
   }
   header.top h1{font-size:15px; font-weight:600; line-height:1.2;}
   .date-pill{
@@ -67,7 +71,7 @@
     font-size:12.5px; font-weight:600; outline:none; color-scheme: dark;
   }
   .cat-switch{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; background:rgba(255,255,255,0.18); padding:3px; border-radius:11px;}
-  .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:'Kanit','Sarabun',sans-serif;
+  .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:'Kanit','Sarabun','Noto Sans Thai',sans-serif;
     font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer; transition:.15s;}
   .cat-switch button.on{background:#fff; color:var(--orange-dark); box-shadow:0 2px 6px rgba(0,0,0,0.12);}
   body.simple .only-petty{display:none !important;}
@@ -116,7 +120,7 @@
   .money-box{background:var(--orange-light); border-radius:12px; padding:12px; display:flex;
     justify-content:space-between; align-items:center; margin-top:10px;}
   .money-box .lbl{font-size:13px; color:var(--ink-soft); font-weight:600;}
-  .money-box .val{font-size:20px; font-weight:700; color:var(--orange-dark); font-family:'Kanit',sans-serif;}
+  .money-box .val{font-size:20px; font-weight:700; color:var(--orange-dark); font-family:'Kanit','Noto Sans Thai',sans-serif;}
 
   /* item rows */
   .item-row{border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; position:relative; background:#fffdfb;}
@@ -160,10 +164,10 @@
   .totals-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:14px;}
   .totals-grid .box{background:var(--orange-light); border-radius:10px; padding:10px; text-align:center;}
   .totals-grid .box .l{font-size:11px; color:var(--ink-soft); font-weight:600;}
-  .totals-grid .box .v{font-size:16px; font-weight:700; color:var(--orange-dark); font-family:'Kanit',sans-serif; margin-top:2px;}
+  .totals-grid .box .v{font-size:16px; font-weight:700; color:var(--orange-dark); font-family:'Kanit','Noto Sans Thai',sans-serif; margin-top:2px;}
 
   .btn{display:block; width:100%; text-align:center; padding:14px; border-radius:12px; border:none;
-    font-family:'Kanit',sans-serif; font-weight:600; font-size:15.5px; cursor:pointer; transition:.15s;}
+    font-family:'Kanit','Noto Sans Thai',sans-serif; font-weight:600; font-size:15.5px; cursor:pointer; transition:.15s;}
   .btn-primary{background:var(--orange); color:#fff; box-shadow:0 6px 16px rgba(249,115,22,0.35);}
   .btn-primary:active{transform:scale(0.98);}
   .btn-ghost{background:#fff; color:var(--orange-dark); border:1.5px solid var(--orange);}
@@ -202,7 +206,7 @@
   .rr-stat{background:var(--orange-light); border-radius:9px; padding:6px 4px; text-align:center;}
   .rr-stat.rr-highlight{background:#fff4ea; border:1px solid var(--orange);}
   .rr-stat .rr-l{display:block; font-size:10px; color:var(--ink-soft); font-weight:600; margin-bottom:2px;}
-  .rr-stat .rr-v{display:block; font-size:12.5px; font-weight:700; color:var(--orange-dark); font-family:'Kanit',sans-serif;}
+  .rr-stat .rr-v{display:block; font-size:12.5px; font-weight:700; color:var(--orange-dark); font-family:'Kanit','Noto Sans Thai',sans-serif;}
 
   /* lock screen */
   .lock-screen{
@@ -216,7 +220,7 @@
   .lock-logo{
     width:56px; height:56px; border-radius:16px; background:var(--orange-light); color:var(--orange-dark);
     display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px;
-    font-family:'Kanit',sans-serif; margin:0 auto 12px;
+    font-family:'Kanit','Noto Sans Thai',sans-serif; margin:0 auto 12px;
   }
   .lock-sub{font-size:13px; color:var(--ink-soft); margin:6px 0 18px;}
   .pin-dots{display:flex; justify-content:center; gap:14px; margin-bottom:6px;}
@@ -226,7 +230,7 @@
   .keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px;}
   .key{
     aspect-ratio:1; border:1.5px solid var(--line); background:#fffdfb; border-radius:14px;
-    font-family:'Kanit',sans-serif; font-size:22px; font-weight:600; color:var(--ink);
+    font-family:'Kanit','Noto Sans Thai',sans-serif; font-size:22px; font-weight:600; color:var(--ink);
     cursor:pointer; transition:.12s; display:flex; align-items:center; justify-content:center;
   }
   .key:active{background:var(--orange-light); border-color:var(--orange); transform:scale(0.95);}
@@ -627,6 +631,12 @@ if(SIMPLE){ document.getElementById('stepNum2').textContent = '1'; document.getE
 
 async function switchCategory(c){
   if(c === CAT || !CATS[c]) return;
+  // ให้ปุ่มที่กดสว่างขึ้นทันที + ค่อยๆจางหน้าจอ ก่อนสลับหมวด (กันไม่ให้ดูเหมือนจอเด้ง/กระตุก)
+  document.querySelectorAll('.cat-switch button').forEach(b=>b.classList.remove('on'));
+  const nextBtn = document.getElementById('catBtn-' + c);
+  if(nextBtn) nextBtn.classList.add('on');
+  document.getElementById('app').classList.add('fade-out');
+  document.getElementById('lockScreen').classList.add('fade-out');
   // ส่งฉบับร่างที่ค้างอยู่ขึ้นคลาวด์ก่อนสลับหมวด (รอไม่เกิน 1.5 วินาที)
   if(saveDraftTimer){
     clearTimeout(saveDraftTimer); saveDraftTimer = null;
@@ -635,6 +645,7 @@ async function switchCategory(c){
     }
   }
   try{ localStorage.setItem(K_CAT, c); }catch(e){}
+  await new Promise(r=>setTimeout(r, 150)); // ให้ทันเห็น transition จางหายก่อน reload
   location.reload();
 }
 
