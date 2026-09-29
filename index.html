@@ -66,14 +66,14 @@
     background:transparent;border:none;color:#fff;font-family:'Sarabun',sans-serif;
     font-size:12.5px; font-weight:600; outline:none; color-scheme: dark;
   }
-  .cat-switch{display:flex; gap:4px; margin-top:6px; background:rgba(255,255,255,0.18); padding:3px; border-radius:11px;}
+  .cat-switch{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; background:rgba(255,255,255,0.18); padding:3px; border-radius:11px;}
   .cat-switch button{flex:1; border:none; background:transparent; color:#fff; font-family:'Kanit','Sarabun',sans-serif;
     font-size:13px; font-weight:600; padding:5px 6px; border-radius:8px; cursor:pointer; transition:.15s;}
   .cat-switch button.on{background:#fff; color:var(--orange-dark); box-shadow:0 2px 6px rgba(0,0,0,0.12);}
   body.simple .only-petty{display:none !important;}
   body.dash section:not(#view-dash){display:none !important;}
   body.dash nav.tabs, body.dash #footerBar, body.dash #statusChip, body.dash .date-pill{display:none !important;}
-  .cat-switch button{padding:5px 2px; font-size:12.5px;}
+  .cat-switch button{padding:5px 2px; font-size:11px; min-width:70px;}
   .dash-legend{display:flex; flex-wrap:wrap; gap:10px; margin:2px 0 8px; font-size:11.5px; color:var(--ink-soft); font-weight:600;}
   .dash-legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px;}
   .chart-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -272,6 +272,7 @@
     <div class="cat-switch">
       <button type="button" id="catBtn-petty" onclick="switchCategory('petty')">💵 เงินสดย่อย</button>
       <button type="button" id="catBtn-main" onclick="switchCategory('main')">🥩 วัตถุดิบหลัก</button>
+      <button type="button" id="catBtn-online" onclick="switchCategory('online')">🛒 สั่งออนไลน์</button>
       <button type="button" id="catBtn-summary" onclick="switchCategory('summary')">📊 สรุป</button>
     </div>
     <div class="chip-row">
@@ -469,13 +470,14 @@
 const CATS = {
   petty: { label:'เงินสดย่อย',  suffix:'' },
   main:  { label:'วัตถุดิบหลัก', suffix:'_main' },
+  online: { label:'สั่งออนไลน์', suffix:'_online' },
   summary: { label:'สรุป', suffix:'_summary' }
 };
 const K_CAT = 'wlcash_category_v1';
 let CAT = 'petty';
 try{ const c = localStorage.getItem(K_CAT); if(c && CATS[c]) CAT = c; }catch(e){}
 const CAT_LABEL = CATS[CAT].label;
-const SIMPLE = (CAT === 'main');   // วัตถุดิบหลัก: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
+const SIMPLE = (CAT === 'main' || CAT === 'online');   // วัตถุดิบหลัก/สั่งออนไลน์: ไม่มียอดตั้งต้น/บิล/ชำระเงิน
 if(SIMPLE) document.body.classList.add('simple');
 let dashCloud = { petty:null, main:null };
 const DASH = (CAT === 'summary');  // หมวดสรุป: แสดงกราฟ/รายละเอียดรวมทั้ง 2 หมวด
@@ -501,6 +503,13 @@ const DEFAULT_MATERIALS_MAIN = [
   'วอลล์','น้ำแข็ง','โค้ก','นามน','เสริมสุข'
 ];
 
+const DEFAULT_MATERIALS_ONLINE = [
+  'กาชา เงินทอน','Tax','โรงแรม','ประปา','ค่าไฟ','น้ำจิ้มงา','วาซาบิ','สาหร่ายแผ่น','โชยุ','วากาเมะ',
+  'น้ำมันปาล์ม','อายิ','รสดี','กะทิ P','แรพอาหาร','น้ำยาล้างจาน','ขวด','ถุงดำ','หลอดดูด','ไม้จิ้มฟัน',
+  'ไม้เสียบอาหาร','ฝอยขัดหม้อ','สก๊อตไบรท์','ริชแบนด์','ผงมะนาว P','ตะเกียบ','กระดาษทิชชู่','ทิชชู่ม้วน',
+  'หอมเจียว','ถุงม้วนปรุ','พู่'
+];
+
 function loadJSON(key, fallback){
   try{ const v = localStorage.getItem(key); return v? JSON.parse(v): fallback; }catch(e){ return fallback; }
 }
@@ -508,7 +517,8 @@ function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
 let materials = loadJSON(K_MATERIALS, null);
 if(SIMPLE && Array.isArray(materials) && materials.length === 0){ materials = null; } // เคยเปิดหมวดนี้ตอนยังว่าง -> ใส่ค่าเริ่มต้น
-if(!materials){ materials = (CAT === 'petty') ? DEFAULT_MATERIALS.slice() : (CAT === 'main' ? DEFAULT_MATERIALS_MAIN.slice() : []); saveJSON(K_MATERIALS, materials); }
+const DEFAULT_MATERIALS_BY_CAT = { petty:DEFAULT_MATERIALS, main:DEFAULT_MATERIALS_MAIN, online:DEFAULT_MATERIALS_ONLINE };
+if(!materials){ materials = (DEFAULT_MATERIALS_BY_CAT[CAT] || []).slice(); saveJSON(K_MATERIALS, materials); }
 let records = loadJSON(K_RECORDS, {});
 let drafts  = loadJSON(K_DRAFTS, {});
 
