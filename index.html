@@ -1256,8 +1256,9 @@ function dashBestEntries(cat){
 }
 
 function initDashboard(){
+  const now = new Date();
   const to = todayStr();
-  const fromD = new Date(to + 'T00:00:00'); fromD.setDate(fromD.getDate() - 6);
+  const fromD = new Date(now.getFullYear(), now.getMonth(), 1); // วันที่ 1 ของเดือนปัจจุบัน
   document.getElementById('dashFrom').value = toDateStr(fromD);
   document.getElementById('dashTo').value = to;
   if(!dashListenersBound){
