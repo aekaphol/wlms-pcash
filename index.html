@@ -151,6 +151,34 @@
     font-family:'Sarabun',sans-serif; font-size:14px; margin-top:4px;}
   .add-row-btn:active{transform:scale(0.99);}
 
+  /* compact item list (tap a row to edit in the sheet) */
+  .item-list{margin-bottom:10px;}
+  .item-list-row{display:flex; align-items:center; gap:10px; border:1.5px solid var(--line);
+    border-radius:12px; padding:10px 12px; margin-bottom:8px; background:#fffdfb; cursor:pointer;
+    transition:.15s;}
+  .item-list-row:active{transform:scale(0.99); background:var(--orange-light);}
+  .item-list-row .ilr-main{flex:1; min-width:0;}
+  .item-list-row .ilr-name{font-weight:700; font-size:14.5px; color:var(--ink); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;}
+  .item-list-row .ilr-sub{font-size:12px; color:var(--ink-soft); margin-top:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item-list-row .ilr-amt{font-weight:700; font-size:15px; color:var(--orange-dark);
+    font-family:'Kanit','Noto Sans Thai',sans-serif; white-space:nowrap;}
+  .item-list-empty{color:var(--ink-soft); font-size:13px; text-align:center; padding:14px 0;}
+
+  /* bottom-sheet for adding / editing one item */
+  .sheet-overlay{position:fixed; inset:0; background:rgba(40,30,20,0.45); display:none;
+    align-items:flex-end; justify-content:center; z-index:200;}
+  .sheet-overlay.open{display:flex;}
+  .sheet-box{width:100%; max-width:520px; background:#fff; border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto;
+    box-shadow:0 -8px 30px rgba(0,0,0,0.25); animation:sheetUp .18s ease-out;}
+  @keyframes sheetUp{from{transform:translateY(16px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet-box h3{margin:0 0 14px; font-size:17px; font-weight:700; color:var(--ink);}
+  .sheet-box .field{margin-bottom:14px;}
+  .sheet-actions{display:flex; gap:10px; margin-top:6px;}
+  .sheet-actions .btn{flex:1; margin-top:0; padding:13px;}
+
   .summary-table{width:100%; border-collapse:collapse; font-size:13.5px;}
   .summary-table th,.summary-table td{padding:8px 6px; text-align:left; border-bottom:1px solid var(--line);}
   .summary-table th{color:var(--ink-soft); font-weight:600; font-size:12px;}
@@ -327,8 +355,8 @@
       <h2><span class="num" id="stepNum2">2</span> รายการเบิกจ่าย / วัตถุดิบ</h2>
       <div class="small-note" style="margin-bottom:8px;">แตะวัตถุดิบเพื่อเพิ่มรายการอย่างรวดเร็ว</div>
       <div id="quickPicks" class="quick-picks"></div>
-      <div id="itemsWrap"></div>
-      <button class="add-row-btn" onclick="addItemRow()">+ เพิ่มรายการ / วัตถุดิบใหม่</button>
+      <div id="itemsWrap" class="item-list"></div>
+      <button class="add-row-btn" onclick="openItemSheet(null)">+ เพิ่มรายการ / วัตถุดิบใหม่</button>
       <div class="small-note">พิมพ์ชื่อวัตถุดิบใหม่ได้เลย ระบบจะจำไว้ให้เลือกใช้ในวันถัดไปโดยอัตโนมัติ</div>
     </div>
 
@@ -468,6 +496,44 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- bottom sheet: add / edit one item in "รายการเบิกจ่าย / วัตถุดิบ" -->
+<div class="sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this) closeItemSheet()">
+  <div class="sheet-box">
+    <h3 id="sheetTitle">เพิ่มรายการ</h3>
+    <div class="field">
+      <label>รายการ / วัตถุดิบ</label>
+      <input id="sheetName" list="materials-list" placeholder="เช่น พริกขี้หนู, แมคโคร...">
+    </div>
+    <div class="field">
+      <label>มูลค่า (บาท)</label>
+      <input id="sheetAmount" type="number" inputmode="decimal" min="0" placeholder="0">
+    </div>
+    <div class="field only-petty">
+      <label>บิล</label>
+      <div class="seg" id="sheetBillSeg">
+        <button type="button" onclick="setSheetBill('yes')">มี</button>
+        <button type="button" onclick="setSheetBill('no')">ไม่มี</button>
+      </div>
+    </div>
+    <div class="field only-petty">
+      <label>ชำระเงิน</label>
+      <div class="seg pay" id="sheetPaySeg">
+        <button type="button" class="cash" onclick="setSheetPay('cash')">เงินสด</button>
+        <button type="button" class="credit" onclick="setSheetPay('credit')">บัตร</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>หมายเหตุ</label>
+      <input id="sheetNote" placeholder="(ถ้ามี)">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="sheetDeleteBtn" onclick="deleteSheetItem()">ลบ</button>
+      <button class="btn btn-ghost" onclick="closeItemSheet()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveSheetItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase (ใช้สำหรับซิงก์ข้อมูลข้ามเครื่อง — ถ้ายังไม่ตั้งค่า แอปจะทำงานแบบเครื่องเดียวตามปกติ) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -784,8 +850,7 @@ function loadDateIntoForm(dateStr, skipCloudRefresh){
 
   document.getElementById('additionalCash').value = data.additionalCash || 0;
   document.getElementById('salesInput').value = data.sales ? data.sales : '';
-  currentItems = (data.items || []).map(it => ({...it}));
-  if(currentItems.length === 0){ addItemRow(false); }
+  currentItems = (data.items || []).map(it => ({...it})).filter(it => (it.name||'').trim());
   renderItemRows();
   renderQuickPicks();
   updateEntryTotals();
@@ -849,23 +914,94 @@ function getFormData(){
   };
 }
 
-/* ============ ITEM ROWS ============ */
-function addItemRow(focus=true){
-  const row = { _id: idCounter++, name:'', hasReceipt:'yes', amount:'', pay:'cash', note:'' };
-  currentItems.push(row);
-  renderItemRows();
-  if(focus){
-    setTimeout(()=>{
-      const inputs = document.querySelectorAll('.item-name-input');
-      const last = inputs[inputs.length-1];
-      if(last) last.focus();
-    }, 30);
+/* ============ ITEM ROWS (tap-to-open bottom sheet) ============ */
+
+// sheetEditId: null = adding a new item, otherwise the _id of the item being edited
+let sheetEditId = null;
+
+function openItemSheet(id, prefillName){
+  sheetEditId = id;
+  const overlay = document.getElementById('itemSheetOverlay');
+  const title = document.getElementById('sheetTitle');
+  const nameEl = document.getElementById('sheetName');
+  const amtEl = document.getElementById('sheetAmount');
+  const noteEl = document.getElementById('sheetNote');
+  const delBtn = document.getElementById('sheetDeleteBtn');
+
+  let it = null;
+  if(id !== null){
+    it = currentItems.find(x => x._id === id);
+    if(!it) return;
   }
+
+  title.textContent = it ? 'แก้ไขรายการ' : 'เพิ่มรายการ';
+  nameEl.value = it ? it.name : (prefillName || '');
+  amtEl.value = it ? it.amount : '';
+  noteEl.value = it ? it.note : '';
+  setSheetBill(it ? it.hasReceipt : 'yes');
+  setSheetPay(it ? it.pay : 'cash');
+  delBtn.style.display = it ? 'block' : 'none';
+
+  overlay.classList.add('open');
+  setTimeout(()=>{ nameEl.focus(); }, 60);
 }
 
-function removeItemRow(id){
-  currentItems = currentItems.filter(it => it._id !== id);
-  if(currentItems.length === 0){ addItemRow(false); return; }
+function closeItemSheet(){
+  document.getElementById('itemSheetOverlay').classList.remove('open');
+  sheetEditId = null;
+}
+
+function setSheetBill(val){
+  const seg = document.getElementById('sheetBillSeg');
+  seg.dataset.value = val;
+  seg.querySelectorAll('button').forEach((btn,i)=>{
+    btn.classList.toggle('on', (i===0 && val==='yes') || (i===1 && val==='no'));
+  });
+}
+
+function setSheetPay(val){
+  const seg = document.getElementById('sheetPaySeg');
+  seg.dataset.value = val;
+  seg.querySelectorAll('button').forEach(btn=>{
+    btn.classList.toggle('on', btn.classList.contains(val));
+  });
+}
+
+function saveSheetItem(){
+  const name = document.getElementById('sheetName').value.trim();
+  const amount = Number(document.getElementById('sheetAmount').value) || 0;
+  const note = document.getElementById('sheetNote').value.trim();
+  const hasReceipt = document.getElementById('sheetBillSeg').dataset.value || 'yes';
+  const pay = document.getElementById('sheetPaySeg').dataset.value || 'cash';
+
+  if(!name){ showToast('กรุณาใส่ชื่อรายการ / วัตถุดิบ'); return; }
+  if(amount <= 0){ showToast('กรุณาใส่มูลค่าให้มากกว่า 0'); return; }
+
+  if(!materials.includes(name)){
+    materials.push(name);
+    saveJSON(K_MATERIALS, materials);
+    cloudSaveMaterials();
+    renderMaterialsDatalist();
+  }
+
+  if(sheetEditId !== null){
+    const it = currentItems.find(x => x._id === sheetEditId);
+    if(it){ Object.assign(it, { name, amount, note, hasReceipt, pay }); }
+  } else {
+    currentItems.push({ _id: idCounter++, name, amount, note, hasReceipt, pay });
+  }
+
+  closeItemSheet();
+  renderItemRows();
+  renderQuickPicks();
+  updateEntryTotals();
+  saveDraft();
+}
+
+function deleteSheetItem(){
+  if(sheetEditId === null) return;
+  currentItems = currentItems.filter(it => it._id !== sheetEditId);
+  closeItemSheet();
   renderItemRows();
   renderQuickPicks();
   updateEntryTotals();
@@ -874,78 +1010,29 @@ function removeItemRow(id){
 
 function renderItemRows(){
   const wrap = document.getElementById('itemsWrap');
-  wrap.innerHTML = '';
-  currentItems.forEach((it, idx)=>{
-    if(it._id === undefined) it._id = idCounter++;
-    const div = document.createElement('div');
-    div.className = 'item-row';
-    div.innerHTML = `
-      <span class="rownum">รายการที่ ${idx+1}</span>
-      <button class="del" onclick="removeItemRow(${it._id})" title="ลบรายการ">✕</button>
-      <div class="row-grid">
-        <div class="field">
-          <label>รายการ / วัตถุดิบ</label>
-          <input class="item-name-input" list="materials-list" value="${escapeAttr(it.name)}"
-            placeholder="เช่น พริกขี้หนู, แมคโคร..."
-            oninput="updateItem(${it._id},'name',this.value)">
+  if(currentItems.length === 0){
+    wrap.innerHTML = '<div class="item-list-empty">ยังไม่มีรายการ — แตะวัตถุดิบด้านบน หรือกด "+ เพิ่มรายการ"</div>';
+    return;
+  }
+  wrap.innerHTML = currentItems.map(it=>{
+    const subParts = [];
+    if(!SIMPLE){
+      subParts.push(it.hasReceipt==='yes' ? 'มีบิล' : 'ไม่มีบิล');
+      subParts.push(it.pay==='cash' ? 'เงินสด' : 'บัตร');
+    }
+    if(it.note) subParts.push(it.note);
+    const sub = subParts.join(' · ');
+    return `
+      <div class="item-list-row" onclick="openItemSheet(${it._id})">
+        <div class="ilr-main">
+          <div class="ilr-name">${escapeAttr(it.name)}</div>
+          ${sub ? `<div class="ilr-sub">${escapeAttr(sub)}</div>` : ''}
         </div>
-        <div class="${SIMPLE ? '' : 'two'}">
-          <div class="field">
-            <label>มูลค่า (บาท)</label>
-            <input type="number" inputmode="decimal" min="0" value="${it.amount}"
-              placeholder="0" oninput="updateItem(${it._id},'amount',this.value)">
-          </div>
-          <div class="field only-petty">
-            <label>บิล</label>
-            <div class="seg">
-              <button type="button" class="${it.hasReceipt==='yes'?'on':''}" onclick="updateItem(${it._id},'hasReceipt','yes')">มี</button>
-              <button type="button" class="${it.hasReceipt==='no'?'on':''}" onclick="updateItem(${it._id},'hasReceipt','no')">ไม่มี</button>
-            </div>
-          </div>
-        </div>
-        <div class="field only-petty">
-          <label>ชำระเงิน</label>
-          <div class="seg pay">
-            <button type="button" class="cash ${it.pay==='cash'?'on':''}" onclick="updateItem(${it._id},'pay','cash')">เงินสด</button>
-            <button type="button" class="credit ${it.pay==='credit'?'on':''}" onclick="updateItem(${it._id},'pay','credit')">บัตร</button>
-          </div>
-        </div>
-        <div class="field">
-          <label>หมายเหตุ</label>
-          <input value="${escapeAttr(it.note)}" placeholder="(ถ้ามี)" oninput="updateItem(${it._id},'note',this.value)">
-        </div>
+        <div class="ilr-amt">฿${Number(it.amount||0).toLocaleString('th-TH')}</div>
       </div>
     `;
-    wrap.appendChild(div);
-  });
+  }).join('');
 }
-
-function updateItem(id, field, value){
-  const it = currentItems.find(x => x._id === id);
-  if(!it) return;
-  it[field] = value;
-  if(field === 'name'){
-    renderQuickPicks();
-  }
-  if(field !== 'name' && field !== 'note' && field !== 'amount'){
-    renderItemRows(); // re-render for button highlight states
-  }
-  updateEntryTotals();
-  saveDraft();
-}
-
-// commit new material names to master list on blur
-document.addEventListener('blur', function(e){
-  if(e.target && e.target.classList && e.target.classList.contains('item-name-input')){
-    const val = e.target.value.trim();
-    if(val && !materials.includes(val)){
-      materials.push(val);
-      saveJSON(K_MATERIALS, materials);
-      cloudSaveMaterials();
-      renderMaterialsDatalist();
-    }
-  }
-}, true);
 
 function renderMaterialsDatalist(){
   let dl = document.getElementById('materials-list');
@@ -975,17 +1062,13 @@ function renderQuickPicks(){
 }
 
 function pickMaterial(name){
-  // fill an existing empty row first, otherwise add a new row
-  let target = currentItems.find(it => !it.name || !it.name.trim());
-  if(target){
-    target.name = name;
+  // if this material already has an item today, open it for editing; otherwise open the sheet pre-filled
+  const existing = currentItems.find(it => (it.name||'').trim() === name);
+  if(existing){
+    openItemSheet(existing._id);
   } else {
-    currentItems.push({ _id: idCounter++, name, hasReceipt:'yes', amount:'', pay:'cash', note:'' });
+    openItemSheet(null, name);
   }
-  renderItemRows();
-  renderQuickPicks();
-  updateEntryTotals();
-  saveDraft();
 }
 
 function escapeAttr(s){
