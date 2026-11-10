@@ -1399,16 +1399,19 @@ function renderDashboard(){
     const petSpend = pt ? pt.totalSpend : 0;
     const mainTotal = mt ? mt.totalSpend : 0;
     const onlineTotal = ot ? ot.totalSpend : 0;
-    return { d, hasP: !!p, hasM: !!m, hasO: !!o, sales, petCash, petCredit, petSpend, mainTotal, onlineTotal, expense: petSpend + mainTotal + onlineTotal, diff: sales - petSpend - mainTotal - onlineTotal };
+    return { d, hasP: !!p, hasM: !!m, hasO: !!o, sales, petCash, petCredit, petSpend, mainTotal, onlineTotal, expense: petSpend + mainTotal + onlineTotal, diff: sales - mainTotal - onlineTotal };
   });
 
   // ---- totals
   const sum = k => rows.reduce((a,r)=>a + r[k], 0);
-  const tSales = sum('sales'), tExp = sum('expense'), tDiff = tSales - tExp;
+  const tSales = sum('sales'), tPet = sum('petSpend'), tMain = sum('mainTotal'), tOnl = sum('onlineTotal');
+  const tDiff = tSales - tMain - tOnl;   // ส่วนต่าง = ยอดขายรวม − แอน − พล
   totalsEl.innerHTML = `
-    <div class="box"><div class="l">ยอดขายรวม</div><div class="v">${fmtBaht(tSales)}</div></div>
-    <div class="box"><div class="l">รายจ่ายรวม</div><div class="v">${fmtBaht(tExp)}</div></div>
-    <div class="box"><div class="l">ส่วนต่าง</div><div class="v ${tDiff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(tDiff)}</div></div>`;
+    <div class="box" style="grid-column:1 / -1;"><div class="l">ยอดขายรวม</div><div class="v">${fmtBaht(tSales)}</div></div>
+    <div class="box"><div class="l">แคท</div><div class="v">${fmtBaht(tPet)}</div></div>
+    <div class="box"><div class="l">แอน</div><div class="v">${fmtBaht(tMain)}</div></div>
+    <div class="box"><div class="l">พล</div><div class="v">${fmtBaht(tOnl)}</div></div>
+    <div class="box" style="grid-column:1 / -1;"><div class="l">ส่วนต่าง (ยอดขายรวม − แอน − พล)</div><div class="v ${tDiff >= 0 ? 'diff-pos' : 'diff-neg'}">${fmtBaht(tDiff)}</div></div>`;
 
   // ---- chart (SVG)
   const maxV = niceMax(Math.max(...rows.map(r => Math.max(r.sales, r.expense)), 0));
